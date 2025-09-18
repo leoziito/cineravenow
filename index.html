@@ -100,6 +100,27 @@
                 opacity: 1;
             }
         }
+
+        /* Estilo para barra de progresso */
+        #loading-bar {
+            width: 0;
+            height: 4px;
+            background-color: #3b82f6;
+            transition: width 0.3s ease;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 50;
+        }
+        .notification-item {
+            position: relative;
+            padding-right: 3rem; /* Aumenta o padding para evitar sobreposição */
+        }
+        .remove-notification-btn {
+            position: absolute;
+            bottom: 4px; /* Move o botão para a parte inferior */
+            right: 4px;
+        }
     </style>
     <script>
         // Configuração para usar o modo escuro com a classe 'dark'
@@ -116,6 +137,8 @@
     </script>
 </head>
 <body class="bg-white text-zinc-900 dark:bg-zinc-900 dark:text-white transition-colors duration-300">
+    <!-- Barra de carregamento -->
+    <div id="loading-bar"></div>
 
     <!-- Cabeçalho do App -->
     <header class="sticky top-0 z-40 bg-white dark:bg-zinc-900 p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
@@ -169,6 +192,12 @@
                     <a href="#" id="my-list-link" class="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
                         <i class="fa-solid fa-heart w-6 h-6" aria-hidden="true"></i>
                         <span>Minha Lista</span>
+                    </a>
+                </li>
+                 <li>
+                    <a href="https://chat.whatsapp.com/Lidb3f8U9SsDe10kiLVICR" target="_blank" class="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors">
+                        <i class="fa-brands fa-whatsapp w-6 h-6" aria-hidden="true"></i>
+                        <span>Faça seu pedido</span>
                     </a>
                 </li>
                 <li>
@@ -337,20 +366,25 @@
     <!-- Modal genérico para episódios/links -->
     <div id="links-modal" class="modal fixed inset-0 z-50 bg-black bg-opacity-50 items-center justify-center p-4">
         <div class="bg-white dark:bg-zinc-800 p-8 rounded-2xl shadow-xl w-full max-w-lg transform transition-all max-h-[80vh] overflow-y-auto">
-            <h3 id="links-modal-title" class="text-xl font-bold mb-4 text-center"></h3>
+            <!-- Botão de fechar no topo -->
+            <button id="close-links-modal" class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+            <h3 id="links-modal-title" class="text-xl font-bold mb-4 text-center mt-4"></h3>
             <div id="links-modal-content" class="space-y-4"></div>
-            <button id="close-links-modal" class="w-full py-2 mt-4 text-gray-500 dark:text-gray-400">Fechar</button>
         </div>
     </div>
 
     <!-- Modal de Notificações -->
     <div id="notifications-modal" class="modal fixed inset-0 z-50 bg-black bg-opacity-50 items-center justify-center p-4">
         <div class="bg-white dark:bg-zinc-800 p-8 rounded-2xl shadow-xl w-full max-w-lg transform transition-all max-h-[80vh] overflow-y-auto">
-            <h3 class="text-xl font-bold mb-4 text-center text-zinc-900 dark:text-white">Notificações</h3>
+            <button id="close-notifications-modal" class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+            <h3 class="text-xl font-bold mb-4 text-center text-zinc-900 dark:text-white mt-4">Notificações</h3>
             <div id="notifications-list" class="space-y-4">
                 <!-- Conteúdo dinâmico das notificações -->
             </div>
-            <button id="close-notifications-modal" class="w-full py-2 mt-4 text-gray-500 dark:text-gray-400">Fechar</button>
         </div>
     </div>
 
@@ -421,7 +455,7 @@
                     <input type="hidden" id="content-backdrop-path">
                     <input type="hidden" id="content-media-type">
 
-                    <button type="submit" class="w-full py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors">Publicar Conteúdo</button>
+                    <button type="submit" id="publish-btn" class="w-full py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 transition-colors">Publicar Conteúdo</button>
                 </form>
             </div>
             
@@ -430,6 +464,10 @@
             <!-- Conteúdo Existente -->
             <div id="existing-content">
                 <h4 class="text-xl font-bold mb-4">Conteúdo Publicado</h4>
+                <div class="relative mb-4">
+                    <input type="text" id="admin-search-input" placeholder="Buscar conteúdo publicado..." class="w-full p-2 pl-8 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-zinc-700 dark:text-white">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" aria-hidden="true"></i>
+                </div>
                 <ul id="content-list" class="space-y-2"></ul>
             </div>
         </div>
@@ -519,6 +557,9 @@
             const loadMoreCatalogBtn = document.getElementById('load-more-catalog');
             const catalogFiltersDiv = document.getElementById('catalog-filters');
             const myListSortSelect = document.getElementById('my-list-sort');
+            const adminSearchInput = document.getElementById('admin-search-input');
+            const publishBtn = document.getElementById('publish-btn');
+            const loadingBar = document.getElementById('loading-bar');
 
             let firebaseApp, auth, db, currentUserId;
             let currentContent = null;
@@ -529,6 +570,27 @@
             let lastVisibleHome = null;
             let lastVisibleCatalog = null;
             let catalogFilters = {};
+
+            // Variável global para rastrear o estado do modal
+            let modalState = null;
+            
+            // --- Persistência de dados do usuário (ID) ---
+            const userStateKey = 'cinerave_user_state';
+            function saveUserState(state) {
+                try {
+                    localStorage.setItem(userStateKey, JSON.stringify(state));
+                } catch (e) {
+                    console.error("Não foi possível salvar o estado do usuário.", e);
+                }
+            }
+            function getUserState() {
+                try {
+                    return JSON.parse(localStorage.getItem(userStateKey));
+                } catch (e) {
+                    return null;
+                }
+            }
+
 
             // Inicialização do Firebase
             try {
@@ -549,6 +611,9 @@
                         // Configura os listeners em tempo real após a autenticação
                         setupRealtimeListeners();
                         loadInitialPage();
+                        
+                        // Restaura o estado do modal se houver um
+                        restoreModalState();
                     } else {
                         userUidSpan.textContent = "Não autenticado";
                         isUserSignedIn = false;
@@ -772,7 +837,6 @@
                 }
             }
 
-
             function setupRealtimeListeners() {
                 // Listener em tempo real para os feedbacks
                 onSnapshot(collection(db, `artifacts/${APP_ID}/public/data/feedbacks`), (snapshot) => {
@@ -794,34 +858,53 @@
                     });
                 });
 
-                // Listener em tempo real para o conteúdo do admin
+                // Listener em tempo real para o conteúdo
                 onSnapshot(collection(db, `artifacts/${APP_ID}/public/data/content`), (snapshot) => {
                     const contentList = document.getElementById('content-list');
                     if (!contentList) return;
-                    contentList.innerHTML = '';
+
+                    // Update local content array
                     allContent = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    if(catalogCountSpan) catalogCountSpan.textContent = allContent.length;
-                    snapshot.forEach((doc) => {
-                        const content = doc.data();
+                    if (catalogCountSpan) catalogCountSpan.textContent = allContent.length;
+
+                    // Update admin list
+                    contentList.innerHTML = '';
+                    allContent.forEach(content => {
                         const li = document.createElement('li');
                         li.className = 'flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 bg-gray-200 dark:bg-zinc-700 rounded-xl';
+                        li.dataset.id = content.id;
                         li.innerHTML = `
                             <div class="flex-1">
                                 <span class="font-bold">${content.title} (${content.year})</span>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">ID: ${doc.id}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">ID: ${content.id}</p>
                             </div>
                             <div class="mt-2 sm:mt-0 flex space-x-2">
-                                <button data-id="${doc.id}" class="edit-btn px-2 py-1 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">Editar</button>
-                                <button data-id="${doc.id}" class="delete-btn px-2 py-1 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors">Excluir</button>
+                                <button data-id="${content.id}" class="edit-btn px-2 py-1 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">Editar</button>
+                                <button data-id="${content.id}" class="delete-btn px-2 py-1 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors">Excluir</button>
                             </div>
                         `;
                         contentList.appendChild(li);
                     });
+                    
+                    // Re-render the public views if they are active
+                    // Use a new list of content to re-render to avoid duplicates
+                    if (mainContent.classList.contains('hidden') === false) {
+                        contentGrid.innerHTML = '';
+                        allContent.slice(0, PAGE_SIZE).forEach(content => renderContentCard(content, contentGrid));
+                        if(allContent.length > 0) renderFeaturedBanner(allContent[0]);
+                    }
+                    if (catalogContent.classList.contains('hidden') === false) {
+                        fullCatalogGrid.innerHTML = '';
+                        allContent.forEach(content => renderContentCard(content, fullCatalogGrid));
+                    }
                 });
 
                 // Listener para notificações em tempo real
                 onSnapshot(collection(db, `artifacts/${APP_ID}/public/data/notifications`), (snapshot) => {
-                    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    // Ordena as notificações por timestamp em ordem decrescente
+                    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                                                     .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                    
                     const count = notifications.length;
                     notificationBadge.textContent = count;
                     if (count > 0) {
@@ -890,8 +973,19 @@
                     `;
                 }
 
+                let seasonBadge = '';
+                if (content.media_type === 'tv' && content.links && content.links.length > 0) {
+                    const seasonCount = content.links.length;
+                    seasonBadge = `
+                        <div class="absolute top-2 right-2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
+                            ${seasonCount} Temp.
+                        </div>
+                    `;
+                }
+
                 const card = document.createElement('div');
                 card.className = 'content-card relative group cursor-pointer overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-shadow duration-300';
+                card.dataset.id = content.id;
                 card.innerHTML = `
                     <img src="${posterUrl}" alt="Pôster de ${content.title}" class="w-full h-auto object-cover rounded-2xl">
                     <div class="content-card-overlay absolute inset-0 bg-black bg-opacity-70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-2 text-center">
@@ -900,6 +994,7 @@
                         <p class="text-xs text-gray-300 mt-1">Assistir</p>
                     </div>
                     ${adminButtons}
+                    ${seasonBadge}
                 `;
                 card.addEventListener('click', (e) => {
                     // Evita o clique em um dos botões de admin
@@ -922,77 +1017,7 @@
                 return html;
             }
             
-            async function fetchAndRenderDetailsPage(contentId) {
-                try {
-                    const docRef = doc(db, `artifacts/${APP_ID}/public/data/content`, contentId);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const content = { id: docSnap.id, ...docSnap.data() };
-                        currentContent = content; // Armazena o conteúdo atual para uso nos botões
-                        renderDetailsPage(content);
-                        showPage('details-content');
-                        updateHistory('details', contentId);
-
-                        // Carregar e renderizar conteúdos similares
-                        fetchAndRenderSimilar(contentId, content.media_type);
-                    } else {
-                        console.error("Conteúdo não encontrado.");
-                        loadHomePage();
-                    }
-                } catch (error) {
-                    console.error("Erro ao buscar conteúdo para a página de detalhes:", error);
-                    loadHomePage();
-                }
-            }
-
-            async function fetchAndRenderSimilar(tmdbId, mediaType) {
-                const similarSection = document.createElement('section');
-                similarSection.id = 'similar-content-section';
-                similarSection.className = 'p-4 mt-8';
-                similarSection.innerHTML = `
-                    <h3 class="text-2xl font-bold mb-4">Conteúdos Similares</h3>
-                    <div id="similar-content-grid" class="content-grid">
-                        ${renderSkeletonLoaders(4)}
-                    </div>
-                `;
-                detailsContent.appendChild(similarSection);
-
-                try {
-                    const resp = await fetch(`https://api.themoviedb.org/3/${mediaType}/${tmdbId}/similar?api_key=${TMDB_API_KEY}&language=pt-BR`);
-                    const data = await resp.json();
-                    
-                    if (!data.results || data.results.length === 0) {
-                        similarSection.innerHTML = ''; // Hide section if no results
-                        return;
-                    }
-
-                    const similarIds = data.results.map(r => r.id.toString());
-                    
-                    const q = query(collection(db, `artifacts/${APP_ID}/public/data/content`), where('__name__', 'in', similarIds));
-                    const querySnapshot = await getDocs(q);
-
-                    const existing = [];
-                    querySnapshot.forEach(docSnap => {
-                        existing.push({ id: docSnap.id, ...docSnap.data() });
-                    });
-
-                    const similarGrid = document.getElementById('similar-content-grid');
-                    if(existing.length > 0) {
-                        similarGrid.innerHTML = '';
-                        existing.forEach(content => renderContentCard(content, similarGrid));
-                    } else {
-                        similarSection.innerHTML = `<h3 class="text-2xl font-bold mb-4">Conteúdos Similares</h3><p class="text-center text-gray-500 dark:text-gray-400">Nenhum conteúdo similar disponível no app.</p>`;
-                    }
-
-                } catch (err) {
-                    console.error('Erro ao buscar similares:', err);
-                    const similarGrid = document.getElementById('similar-content-grid');
-                    if(similarGrid) {
-                         similarGrid.innerHTML = `<p class="text-red-500 text-center">Erro ao carregar conteúdos similares.</p>`;
-                    }
-                }
-            }
-
+            // Removido: fetchAndRenderSimilar
 
             function renderCatalogFilters() {
                 catalogFiltersDiv.innerHTML = `
@@ -1066,9 +1091,9 @@
                                         <i class="fa-solid fa-copy" aria-hidden="true"></i>
                                     </button>
                                 </h1>
-                                <p class="text-sm text-gray-400 mb-4">${content.genres.join(', ')}</p>
+                                <p class="text-sm text-gray-400 mb-4">${(content.genres || []).join(', ')}</p>
                                 <p id="synopsis" class="text-base text-gray-700 mb-4 dark:text-zinc-300"></p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4"><strong>Atores:</strong> ${content.actors.join(', ')}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4"><strong>Atores:</strong> ${(content.actors || []).join(', ')}</p>
                                 
                                 <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-6">
                                     <button id="watch-btn" class="px-4 py-2 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors">
@@ -1102,7 +1127,9 @@
                 document.getElementById('watch-btn').addEventListener('click', () => {
                     if (content.links && content.links.length > 0) {
                         if (content.media_type === 'movie' || !content.links.length) {
-                            window.open(content.links[0]?.url, '_blank');
+                             if(content.links[0]?.url) {
+                                window.open(content.links[0].url, '_blank');
+                            }
                         } else {
                             renderSeasonsModal(content);
                         }
@@ -1145,6 +1172,7 @@
                 const posterUrl = content.poster_path ? `${IMAGE_BASE_URL}w500${content.poster_path}` : 'https://placehold.co/500x750/cccccc/333333?text=Sem+Pôster';
                 const card = document.createElement('div');
                 card.className = 'relative group overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-shadow duration-300';
+                card.dataset.id = content.id;
                 card.innerHTML = `
                     <img src="${posterUrl}" alt="Pôster de ${content.title}" class="w-full h-auto object-cover rounded-2xl group-hover:scale-105 transition-transform duration-300">
                     <div class="absolute inset-0 bg-black bg-opacity-70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-2 text-center">
@@ -1164,6 +1192,38 @@
                 container.appendChild(card);
             }
 
+            // Funções de salvamento e recuperação do estado do modal
+            function saveModalState(modalType, contentId, data) {
+                try {
+                    localStorage.setItem('modalState', JSON.stringify({ modalType, contentId, data }));
+                } catch (e) {
+                    console.error("Não foi possível salvar o estado do modal.", e);
+                }
+            }
+
+            function restoreModalState() {
+                try {
+                    const state = JSON.parse(localStorage.getItem('modalState'));
+                    if (state) {
+                        localStorage.removeItem('modalState');
+                        if (state.modalType === 'seasons') {
+                            fetchAndRenderDetailsPage(state.contentId);
+                            // Chamamos a renderSeasonsModal após o conteúdo ser carregado
+                            // O modal será aberto automaticamente no final do fetchAndRenderDetailsPage
+                        } else if (state.modalType === 'episodes') {
+                            fetchAndRenderDetailsPage(state.contentId).then(() => {
+                                renderEpisodesModal(currentContent, state.data.season, state.data.seasonNumber);
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Não foi possível restaurar o estado do modal.", e);
+                    localStorage.removeItem('modalState');
+                }
+            }
+            window.addEventListener('popstate', restoreModalState);
+
+
             function renderSeasonsModal(content) {
                 linksModalTitle.textContent = `Temporadas de ${content.title}`;
                 linksModalContent.innerHTML = '';
@@ -1180,10 +1240,10 @@
                     seasonBtn.className = 'w-full py-2 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors';
                     seasonBtn.addEventListener('click', () => {
                         renderEpisodesModal(content, seasonObj, seasonIndex + 1);
+                        saveModalState('episodes', content.id, { season: seasonObj, seasonNumber: seasonIndex + 1 });
                     });
                     linksModalContent.appendChild(seasonBtn);
                 });
-
                 linksModal.classList.add('active');
             }
 
@@ -1196,7 +1256,10 @@
                 const backBtn = document.createElement('button');
                 backBtn.textContent = "Voltar para Temporadas";
                 backBtn.className = 'w-full py-2 mb-4 bg-gray-500 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors';
-                backBtn.addEventListener('click', () => renderSeasonsModal(content));
+                backBtn.addEventListener('click', () => {
+                     renderSeasonsModal(content);
+                     saveModalState('seasons', content.id, null);
+                });
                 linksModalContent.appendChild(backBtn);
 
                 seasonObj.episodes.sort((a, b) => {
@@ -1206,11 +1269,13 @@
                 }).forEach((episode, episodeIndex) => {
                     const isWatched = watchedEpisodes[episode.url];
                     const eyeIconClass = isWatched ? 'fa-eye text-green-500' : 'fa-eye-slash text-gray-400';
+                    const epText = `Episódio ${episode.episodeNumber || (episodeIndex + 1)}${episode.quality || episode.language ? ` (${[episode.quality, episode.language].filter(Boolean).join(', ')})` : ''}`;
+                    
                     const episodeBtn = document.createElement('div');
                     episodeBtn.className = 'relative flex items-center bg-gray-700 text-white rounded-xl font-semibold transition-colors pr-10';
                     episodeBtn.innerHTML = `
                         <button data-url="${episode.url}" class="flex-1 py-2 px-4 text-left hover:bg-gray-600 rounded-l-xl">
-                            Episódio ${episode.episodeNumber || (episodeIndex + 1)} (${episode.quality || ''}, ${episode.language || ''})
+                            ${epText}
                         </button>
                         <button class="toggle-watched-btn absolute right-0 top-0 h-full w-10 flex items-center justify-center hover:bg-gray-500 rounded-r-xl" data-url="${episode.url}" aria-label="Marcar episódio como assistido">
                             <i class="fa-solid ${eyeIconClass}" aria-hidden="true"></i>
@@ -1219,7 +1284,13 @@
                     
                     episodeBtn.querySelector('button.flex-1').addEventListener('click', () => {
                         window.open(episode.url, '_blank');
-                        linksModal.classList.remove('active');
+                        // Marca o episódio como visto automaticamente
+                        watchedEpisodes[episode.url] = true;
+                        localStorage.setItem(episodeStorageKey, JSON.stringify(watchedEpisodes));
+                        
+                        const icon = episodeBtn.querySelector('.toggle-watched-btn i');
+                        icon.classList.replace('fa-eye-slash', 'fa-eye');
+                        icon.classList.replace('text-gray-400', 'text-green-500');
                     });
 
                     episodeBtn.querySelector('.toggle-watched-btn').addEventListener('click', (e) => {
@@ -1250,7 +1321,7 @@
                 }
                 notifications.forEach(notif => {
                     const notifItem = document.createElement('div');
-                    notifItem.className = 'flex items-center space-x-4 p-2 bg-gray-100 dark:bg-zinc-700 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors notif-item';
+                    notifItem.className = 'relative flex items-center space-x-4 p-2 bg-gray-100 dark:bg-zinc-700 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors notif-item';
                     notifItem.dataset.id = notif.id;
                     notifItem.dataset.contentId = notif.contentId;
                     const posterUrl = notif.poster_path ? `${IMAGE_BASE_URL}w92${notif.poster_path}` : 'https://placehold.co/92x138/cccccc/333333?text=N/A';
@@ -1260,6 +1331,9 @@
                             <p class="font-bold text-sm">${notif.message}</p>
                             <p class="text-xs text-gray-500 dark:text-gray-400">${notif.timestamp ? new Date(notif.timestamp.seconds * 1000).toLocaleString() : 'agora'}</p>
                         </div>
+                        <button class="remove-notification-btn text-gray-500 hover:text-red-500 p-1" data-id="${notif.id}">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
                     `;
                     notificationsList.appendChild(notifItem);
                 });
@@ -1381,22 +1455,15 @@
                 }
             }
 
-            function removeSearchQuery(query) {
-                let history = getSearchHistory();
-                history = history.filter(item => item.toLowerCase().trim() !== query.toLowerCase().trim());
-                localStorage.setItem('searchHistory', JSON.stringify(history));
-                renderSearchHistory();
-            }
-
             async function searchCatalog(searchQuery) {
                 showPage('main-content');
                 resultsContainer.classList.remove('hidden');
                 featuredBanner.classList.add('hidden');
                 releaseGridSection.classList.add('hidden');
                 resultsContainer.innerHTML = `<div class="flex items-center justify-center p-8">
-                                            <i class="fa-solid fa-spinner animate-spin mr-3 h-8 w-8 text-blue-500" aria-hidden="true"></i>
-                                            <p class="text-zinc-900 dark:text-white">Buscando...</p>
-                                        </div>`;
+                                                    <i class="fa-solid fa-spinner animate-spin mr-3 h-8 w-8 text-blue-500" aria-hidden="true"></i>
+                                                    <p class="text-zinc-900 dark:text-white">Buscando...</p>
+                                                </div>`;
                 
                 try {
                     const queryLowercase = searchQuery.toLowerCase().trim();
@@ -1577,6 +1644,13 @@
                     const seasonNumber = (seasonsContainer.children.length + 1);
                     const title = season.title || `Temporada ${seasonNumber}`;
 
+                    const episodesList = document.createElement('div');
+                    episodesList.className = 'space-y-2 episodes-list';
+
+                    season.episodes?.forEach(episode => {
+                        addEpisodeField(episodesList, episode);
+                    });
+
                     seasonDiv.innerHTML = `
                         <div class="flex items-center space-x-2">
                             <input type="text" name="season-title" placeholder="Nome da Temporada" class="p-2 rounded-xl border dark:bg-zinc-600 flex-1" value="${title}">
@@ -1588,28 +1662,32 @@
                                 <input type="number" name="num-episodes" placeholder="Nº de Episódios" class="p-2 rounded-xl border dark:bg-zinc-700 w-full">
                                 <button type="button" class="generate-episodes-btn px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">Gerar</button>
                             </div>
+                            <div class="episodes-list space-y-2"></div>
+                            <button type="button" class="add-episode-btn mt-2 w-full py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors">Adicionar Outro Episódio</button>
                         </div>
-                        
                     `;
+                    seasonDiv.querySelector('.episodes-list').replaceWith(episodesList);
                     
-                    const episodesContainer = seasonDiv.querySelector('.episodes-container');
+                    const newEpisodesList = seasonDiv.querySelector('.episodes-list');
                     const generateEpisodesBtn = seasonDiv.querySelector('.generate-episodes-btn');
                     const numEpisodesInput = seasonDiv.querySelector('input[name="num-episodes"]');
+                    const addEpisodeBtn = seasonDiv.querySelector('.add-episode-btn');
 
                     generateEpisodesBtn.addEventListener('click', () => {
                         const numEpisodes = parseInt(numEpisodesInput.value, 10);
                         if (numEpisodes > 0) {
-                            episodesContainer.querySelectorAll('.episode-field').forEach(el => el.remove());
+                            newEpisodesList.innerHTML = '';
                             for (let i = 1; i <= numEpisodes; i++) {
-                                addEpisodeField(episodesContainer, { episodeNumber: i });
+                                addEpisodeField(newEpisodesList, { episodeNumber: i });
                             }
                         }
                     });
 
-                    if (season.episodes) {
-                        season.episodes.forEach(episode => addEpisodeField(episodesContainer, episode));
-                    }
-
+                    addEpisodeBtn.addEventListener('click', () => {
+                        const nextEpisodeNumber = newEpisodesList.children.length + 1;
+                        addEpisodeField(newEpisodesList, { episodeNumber: nextEpisodeNumber });
+                    });
+                    
                     seasonsContainer.appendChild(seasonDiv);
                 }
 
@@ -1635,6 +1713,18 @@
                     urlInput.className = 'p-2 rounded-xl border dark:bg-zinc-600 flex-1';
                     urlInput.value = episode.url || '';
                     urlInput.required = true;
+                    
+                    urlInput.addEventListener('keydown', (e) => {
+                         if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const nextInput = urlInput.closest('.episode-field').nextElementSibling?.querySelector('input[name="url"]');
+                            if (nextInput) {
+                                nextInput.focus();
+                                nextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                         }
+                    });
+
 
                     const removeBtn = document.createElement('button');
                     removeBtn.type = 'button';
@@ -1665,14 +1755,8 @@
                     }
                 });
 
-                async function addNotification(contentId, title, posterPath, mediaType, isUpdate = false) {
+                async function addNotification(contentId, title, posterPath, message) {
                     try {
-                        let message = '';
-                        if (isUpdate) {
-                            message = `Conteúdo atualizado: ${title}`;
-                        } else {
-                            message = `${title} acabou de chegar!`;
-                        }
                         await addDoc(collection(db, `artifacts/${APP_ID}/public/data/notifications`), {
                             contentId: contentId,
                             title: title,
@@ -1790,8 +1874,28 @@
                 contentForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     
+                    // Mostra barra de carregamento e desabilita botão
+                    loadingBar.style.width = '50%';
+                    publishBtn.disabled = true;
+
                     const mediaType = contentMediaType.value;
                     let links = [];
+                    let oldContent = null;
+                    let isUpdate = false;
+                    let docRef;
+                    let notificationMessage = `Novo conteúdo adicionado: ${contentTitle.value}`;
+
+                    if (currentContentId) {
+                         docRef = doc(db, `artifacts/${APP_ID}/public/data/content`, currentContentId);
+                         const docSnap = await getDoc(docRef);
+                         isUpdate = docSnap.exists();
+                         if(isUpdate) {
+                            oldContent = docSnap.data();
+                            notificationMessage = `Conteúdo atualizado: ${contentTitle.value}`;
+                         }
+                    } else {
+                         docRef = doc(collection(db, `artifacts/${APP_ID}/public/data/content`));
+                    }
 
                     if (mediaType === 'movie') {
                         const linkInputs = movieLinksList.querySelectorAll('div');
@@ -1801,11 +1905,16 @@
                             const url = div.querySelector('input[name="url"]').value;
                             return { quality, language, url };
                         }).filter(link => link.url);
+                        
+                        if (isUpdate && JSON.stringify(oldContent.links) !== JSON.stringify(links)) {
+                           notificationMessage = `Links atualizados para: ${contentTitle.value}`;
+                        }
+                        
                     } else if (mediaType === 'tv') {
                         const seasonDivs = seasonsContainer.querySelectorAll('.border-2');
                         links = Array.from(seasonDivs).map(seasonDiv => {
                             const seasonTitle = seasonDiv.querySelector('input[name="season-title"]').value;
-                            const episodeDivs = seasonDiv.querySelectorAll('.episodes-container .episode-field');
+                            const episodeDivs = seasonDiv.querySelectorAll('.episodes-list .episode-field');
                             const episodes = Array.from(episodeDivs).map(episodeDiv => {
                                 const episodeNumber = episodeDiv.querySelector('input[name="episode-number"]').value;
                                 const quality = episodeDiv.querySelector('select[name="quality"]').value;
@@ -1816,6 +1925,29 @@
 
                             return { title: seasonTitle, episodes: episodes };
                         }).filter(season => season.episodes.length > 0);
+                        
+                        if(isUpdate) {
+                            const oldSeasons = oldContent.links || [];
+                            const newSeasons = links || [];
+                            if (newSeasons.length > oldSeasons.length) {
+                                notificationMessage = `Nova temporada adicionada: ${contentTitle.value}`;
+                            } else if (JSON.stringify(newSeasons) !== JSON.stringify(oldSeasons)) {
+                                // Check if new episodes were added
+                                const oldEpisodeCount = oldSeasons.reduce((acc, season) => acc + (season.episodes?.length || 0), 0);
+                                const newEpisodeCount = newSeasons.reduce((acc, season) => acc + (season.episodes?.length || 0), 0);
+                                if (newEpisodeCount > oldEpisodeCount) {
+                                    const newEpisodes = newSeasons.flatMap(s => s.episodes).filter(ne => !oldSeasons.some(os => os.episodes.some(oe => oe.url === ne.url)));
+                                    const newEpisodeNumbers = newEpisodes.map(ep => ep.episodeNumber).filter(Boolean);
+                                    if(newEpisodeNumbers.length > 0) {
+                                        notificationMessage = `Novos episódios adicionados: ${newEpisodeNumbers.join(', ')} de ${contentTitle.value}`;
+                                    } else {
+                                        notificationMessage = `Episódios atualizados para: ${contentTitle.value}`;
+                                    }
+                                } else {
+                                    notificationMessage = `Conteúdo atualizado: ${contentTitle.value}`;
+                                }
+                            }
+                        }
                     }
 
                     const contentData = {
@@ -1831,34 +1963,40 @@
                         media_type: mediaType,
                         timestamp: serverTimestamp()
                     };
-
-                    let docRef;
-                    let isUpdate = false;
-                    if (currentContentId) {
-                        docRef = doc(db, `artifacts/${APP_ID}/public/data/content`, currentContentId);
-                        isUpdate = (await getDoc(docRef)).exists();
-                    } else {
-                        docRef = doc(collection(db, `artifacts/${APP_ID}/public/data/content`));
-                    }
                     
                     try {
                         await setDoc(docRef, contentData, { merge: true });
                         console.log("Conteúdo publicado/atualizado com sucesso!");
-                        if (!isUpdate) {
-                            await addDoc(collection(db, `artifacts/${APP_ID}/public/data/notifications`), {
-                                contentId: docRef.id,
-                                title: contentTitle.value,
-                                poster_path: contentPosterPath.value,
-                                message: `Novo conteúdo adicionado: ${contentTitle.value}`,
-                                timestamp: serverTimestamp()
-                            });
+                        if (!isUpdate || oldContent.links?.length !== links.length) {
+                             addNotification(docRef.id, contentTitle.value, contentPosterPath.value, notificationMessage);
                         }
                         resetForm();
                         showTempMessage("Conteúdo publicado com sucesso!");
                     } catch (error) {
                         console.error("Erro ao salvar conteúdo:", error);
                         showTempMessage("Erro ao publicar conteúdo. Verifique o console.", false);
+                    } finally {
+                        // Esconde barra de carregamento e reabilita botão
+                        loadingBar.style.width = '100%';
+                        setTimeout(() => {
+                           loadingBar.style.width = '0';
+                           publishBtn.disabled = false;
+                        }, 500);
                     }
+                });
+
+                // Lógica de busca na área admin
+                adminSearchInput.addEventListener('keyup', () => {
+                    const searchTerm = adminSearchInput.value.toLowerCase();
+                    const listItems = document.querySelectorAll('#content-list li');
+                    listItems.forEach(item => {
+                        const title = item.querySelector('span').textContent.toLowerCase();
+                        if (title.includes(searchTerm)) {
+                            item.style.display = 'flex';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
                 });
 
                 // Listener para editar e excluir conteúdo
@@ -1919,6 +2057,14 @@
                     } else if (button.classList.contains('remove-from-list-btn')) {
                         const contentIdToRemove = button.dataset.id;
                         removeFromMyList(contentIdToRemove);
+                    } else if (button.classList.contains('remove-notification-btn')) {
+                         try {
+                            await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/notifications`, id));
+                            showTempMessage("Notificação removida!");
+                        } catch (error) {
+                            console.error("Erro ao remover notificação:", error);
+                            showTempMessage("Erro ao remover notificação. Verifique o console.", false);
+                        }
                     }
                 });
 
@@ -1945,10 +2091,13 @@
                 // Listener para clicar em uma notificação
                 document.addEventListener('click', async (e) => {
                     const notifItem = e.target.closest('.notif-item');
-                    if (notifItem) {
+                    const removeBtn = e.target.closest('.remove-notification-btn');
+
+                    if (notifItem && !removeBtn) {
                         const notifId = notifItem.dataset.id;
                         const contentId = notifItem.dataset.contentId;
                         try {
+                             // Delete notification after clicking on it to see the content
                             await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/notifications`, notifId));
                             notificationsModal.classList.remove('active');
                             fetchAndRenderDetailsPage(contentId);
@@ -2093,6 +2242,7 @@
 
             closeLinksModal.addEventListener('click', () => {
                 linksModal.classList.remove('active');
+                localStorage.removeItem('modalState'); // Limpa o estado ao fechar manualmente
             });
 
             // Lidar com o clique no link de início
