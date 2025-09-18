@@ -500,6 +500,7 @@
             <div id="notifications-list" class="space-y-4">
                 <!-- Conteúdo dinâmico das notificações -->
             </div>
+            <button id="clear-all-notifications-btn" class="w-full py-2 mt-4 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors transform active:scale-95 duration-200">Limpar todas as Notificações</button>
         </div>
     </div>
 
@@ -522,7 +523,7 @@
                 <h4 id="form-title" class="text-lg font-bold mb-4">Adicionar Novo Conteúdo</h4>
                 <div class="mb-4">
                     <div class="relative">
-                        <input type="text" id="tmdb-search-input" placeholder="Buscar filme/série no TMDB" class="w-full p-2 pl-8 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-zinc-700 dark:text-white">
+                        <input type="text" id="tmdb-search-input" placeholder="Buscar filme/série/coleção no TMDB" class="w-full p-2 pl-8 rounded-xl border border-gray-300 dark:border-gray-700 dark:bg-zinc-700 dark:text-white">
                         <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" aria-hidden="true"></i>
                     </div>
                 </div>
@@ -704,6 +705,7 @@
             const trailerModal = document.getElementById('trailer-modal');
             const youtubePlayer = document.getElementById('youtube-player');
             const closeTrailerModal = document.getElementById('close-trailer-modal');
+            const clearAllNotificationsBtn = document.getElementById('clear-all-notifications-btn');
 
 
             let firebaseApp, auth, db, currentUserId;
@@ -1478,7 +1480,7 @@
                 content.links.forEach((link, index) => {
                     const linkBtn = document.createElement('button');
                     linkBtn.textContent = link.title || `Filme ${index + 1}`;
-                    linkBtn.className = 'w-full py-2 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors';
+                    linkBtn.className = 'w-full py-2 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-600 transition-colors transform active:scale-95 duration-200';
                     linkBtn.addEventListener('click', () => {
                         window.open(link.url, '_blank');
                     });
@@ -1499,7 +1501,7 @@
                         <div>
                             <h4 class="text-white font-bold text-sm sm:text-base">${content.title}</h4>
                         </div>
-                        <button data-id="${content.id}" class="remove-from-list-btn mt-2 px-4 py-2 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors">
+                        <button data-id="${content.id}" class="remove-from-list-btn mt-2 px-4 py-2 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors transform active:scale-95 duration-200">
                             <i class="fa-solid fa-trash mr-2" aria-hidden="true"></i>Remover
                         </button>
                     </div>
@@ -2563,6 +2565,18 @@
                         }
                     }
                 });
+
+                clearAllNotificationsBtn.addEventListener('click', async () => {
+                    const q = query(collection(db, `artifacts/${APP_ID}/public/data/notifications`));
+                    const querySnapshot = await getDocs(q);
+                    const deletePromises = [];
+                    querySnapshot.forEach(notifDoc => {
+                         deletePromises.push(deleteDoc(notifDoc.ref));
+                    });
+                    await Promise.all(deletePromises);
+                    showTempMessage("Todas as notificações foram removidas!");
+                    notificationsModal.classList.remove('active');
+                });
             }
 
             // --- Gerenciamento de Modal e Event Listeners Gerais ---
@@ -2724,7 +2738,10 @@
             // Lidar com o clique no link de início
             document.getElementById('home-link').addEventListener('click', (e) => {
                 e.preventDefault();
-                closeMenu();
+                if(detailsContent.classList.contains('hidden') === false) {
+                    showPage('main-content');
+                    window.scrollTo(0, scrollPositions['home']);
+                }
                 filterAndRenderContent('home');
             });
             
@@ -2793,9 +2810,27 @@
             });
             
             // Navegação rápida
-            navHomeBtn.addEventListener('click', () => filterAndRenderContent('home'));
-            navSeriesBtn.addEventListener('click', () => filterAndRenderContent('series'));
-            navTrendingBtn.addEventListener('click', () => filterAndRenderContent('trending'));
+            navHomeBtn.addEventListener('click', () => {
+                 if(detailsContent.classList.contains('hidden') === false) {
+                     showPage('main-content');
+                     window.scrollTo(0, scrollPositions['home']);
+                 }
+                 filterAndRenderContent('home');
+            });
+            navSeriesBtn.addEventListener('click', () => {
+                 if(detailsContent.classList.contains('hidden') === false) {
+                     showPage('main-content');
+                     window.scrollTo(0, scrollPositions['series']);
+                 }
+                 filterAndRenderContent('series');
+            });
+            navTrendingBtn.addEventListener('click', () => {
+                 if(detailsContent.classList.contains('hidden') === false) {
+                     showPage('main-content');
+                     window.scrollTo(0, scrollPositions['trending']);
+                 }
+                 filterAndRenderContent('trending');
+            });
         });
     </script>
 </body>
