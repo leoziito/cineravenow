@@ -1861,11 +1861,11 @@
                         resultsContainer.innerHTML = `<p class="text-sm text-gray-500 mb-6 text-xl font-semibold">${querySnapshot.docs.length} resultados encontrados</p>`;
                         querySnapshot.docs.forEach(doc => {
                             const item = { id: doc.id, ...doc.data() };
-                            const posterUrl = item.poster_path ? `${IMAGE_BASE_URL}w500${item.poster_path}` : 'https://placehold.co/500x750/cccccc/333333?text=Sem+Pôster';
+                            const posterPath = item.poster_path ? `${IMAGE_BASE_URL}w500${item.poster_path}` : 'https://placehold.co/500x750/cccccc/333333?text=Sem+Pôster';
                             const resultElement = document.createElement('div');
                             resultElement.className = 'flex items-start space-x-4 p-4 bg-gray-50 dark:bg-zinc-800 rounded-2xl shadow-md transition-shadow hover:shadow-lg cursor-pointer';
                             resultElement.innerHTML = `
-                                <img src="${posterUrl}" alt="Pôster de ${item.title}" class="w-24 h-36 rounded-xl object-cover">
+                                <img src="${posterPath}" alt="Pôster de ${item.title}" class="w-24 h-36 rounded-xl object-cover">
                                 <div class="flex-1">
                                     <h3 class="font-bold text-lg">${item.title} (${item.year})</h3>
                                     <p class="text-sm text-gray-700 dark:text-gray-300 mt-2 line-clamp-3">${item.synopsis}</p>
@@ -2218,7 +2218,7 @@
                                 const resultElement = document.createElement('div');
                                 resultElement.className = 'flex items-center space-x-4 p-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-xl transition-colors';
                                 resultElement.innerHTML = `
-                                    <img src="${posterUrl}" alt="Pôster de ${title}" class="w-12 h-18 rounded-xl">
+                                    <img src="${posterPath}" alt="Pôster de ${title}" class="w-12 h-18 rounded-xl">
                                     <div>
                                         <p class="font-bold">${title}</p>
                                         <p class="text-sm text-gray-600 dark:text-gray-400">(${year}) - ${mediaTypeLabel}</p>
@@ -2281,8 +2281,8 @@
                             collectionLinksContainer.classList.remove('hidden');
                             seriesLinksContainer.classList.add('hidden');
                             movieLinksContainer.classList.add('hidden');
-                            if (data.parts && data.parts.length > 0) {
-                                data.parts.forEach(part => addCollectionLinkField({ title: part.title }));
+                            if (data.links && data.links.length > 0) {
+                                data.links.forEach(link => addCollectionLinkField(link));
                             } else {
                                 addCollectionLinkField();
                             }
