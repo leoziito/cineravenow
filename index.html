@@ -381,7 +381,7 @@
                 <option value="timestamp">Mais Recente</option>
                 <option value="title">Título (A-Z)</option>
             </select>
-             <button id="clear-my-list-btn" class="px-4 py-2 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition-colors">
+            <button id="clear-my-list-btn" class="px-4 py-2 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition-colors">
                 <i class="fa-solid fa-trash mr-2" aria-hidden="true"></i>Remover Tudo
             </button>
         </div>
@@ -721,6 +721,26 @@
             let contentToRemoveFromList = null;
             let currentContent = null; // Definido globalmente
 
+            // Banner Rotation
+            let bannerInterval;
+            let bannerIndex = 0;
+            
+            function startBannerRotation(contentArray) {
+                if (!contentArray || contentArray.length === 0) {
+                    featuredBanner.classList.add('hidden');
+                    return;
+                }
+                featuredBanner.classList.remove('hidden');
+                
+                clearInterval(bannerInterval);
+                renderFeaturedBanner(contentArray[0]);
+                bannerIndex = 0;
+                
+                bannerInterval = setInterval(() => {
+                    bannerIndex = (bannerIndex + 1) % contentArray.length;
+                    renderFeaturedBanner(contentArray[bannerIndex]);
+                }, 4000); // 4 segundos
+            }
 
             // Variável global para rastrear o estado do modal
             let modalState = null;
@@ -750,9 +770,8 @@
                 db = getFirestore(firebaseApp);
                 console.log("Firebase inicializado com sucesso.");
 
-                // Autenticação anônima
-                await signInAnonymously(auth);
-
+                // Usamos onAuthStateChanged para garantir que o usuário está autenticado antes de qualquer chamada ao Firestore.
+                // Isso resolve o erro de permissão.
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         currentUserId = user.uid;
@@ -765,6 +784,9 @@
                         // Restaura o estado do modal se houver um
                         restoreModalState();
                     } else {
+                         // Se o usuário não estiver autenticado, tenta fazer login anonimamente
+                         // e depois espera que o onAuthStateChanged seja acionado novamente com o usuário.
+                        await signInAnonymously(auth);
                         userUidSpan.textContent = "Não autenticado";
                         console.log("Usuário não autenticado.");
                     }
@@ -823,9 +845,11 @@
                 resultsContainer.classList.add('hidden');
                 featuredBanner.classList.add('hidden');
                 releaseGridSection.classList.add('hidden');
+                clearInterval(bannerInterval);
 
                 if (pageId === 'main-content') {
                     mainContent.classList.remove('hidden');
+                    startBannerRotation(allContent);
                 } else if (pageId === 'details-content') {
                     detailsContent.classList.remove('hidden');
                     searchInput.classList.add('hidden');
@@ -865,7 +889,7 @@
                 updateHistory('home');
                 renderSearchHistory();
                 contentGrid.innerHTML = renderSkeletonLoaders(PAGE_SIZE);
-                featuredBanner.classList.add('hidden');
+                featuredBanner.classList.remove('hidden');
                 releaseGridSection.classList.remove('hidden');
                 lastVisibleHome = null;
                 await renderDynamicCollections(allContent);
@@ -884,7 +908,7 @@
                 dynamicCollectionsDiv.innerHTML = '';
                 
                 // Coleção: Adicionados Recentemente (baseado no timestamp)
-                const recentContent = [...contentArray].sort((a, b) => b.timestamp.seconds - a.timestamp.seconds).slice(0, 10);
+                const recentContent = [...contentArray].sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)).slice(0, 10);
                 if (recentContent.length > 0) {
                     renderCollection('Adicionados Recentemente', recentContent);
                 }
@@ -938,13 +962,23 @@
                 
                 if (auth.currentUser) {
                     const myListRef = collection(db, `artifacts/${APP_ID}/users/${auth.currentUser.uid}/my_list`);
-                    let myListQuery = query(myListRef, orderBy(sortBy, sortBy === 'title' ? 'asc' : 'desc'));
+                    // NOTE: This query will fail if the 'title' field is not indexed. Sorting in memory is a safer approach for public apps.
+                    let myListQuery = query(myListRef);
                     const querySnapshot = await getDocs(myListQuery);
-                    if (querySnapshot.empty) {
+                    
+                    let docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    if (sortBy === 'title') {
+                        docs.sort((a, b) => a.title.localeCompare(b.title));
+                    } else { // timestamp
+                        docs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                    }
+
+                    if (docs.length === 0) {
                         emptyMessage.classList.remove('hidden');
                     } else {
-                        querySnapshot.forEach(doc => {
-                            renderMyListCard({ id: doc.id, ...doc.data() }, myListGrid);
+                        docs.forEach(doc => {
+                            renderMyListCard(doc, myListGrid);
                         });
                     }
                 } else {
@@ -970,7 +1004,7 @@
                         contentGrid.innerHTML = '';
                         const allContentList = contentToRender || querySnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                         if(allContentList.length > 0) {
-                            renderFeaturedBanner(allContentList[0]);
+                            startBannerRotation(allContentList);
                         }
                     }
                     querySnapshot.docs.forEach(doc => renderContentCard({ id: doc.id, ...doc.data() }, contentGrid));
@@ -1002,8 +1036,8 @@
                     renderContentList(filteredContent);
                 } else if (filterType === 'trending') {
                      // Simulação de conteúdo "Em Alta" usando uma ordenação diferente ou aleatória
-                    filteredContent = [...allContent].sort(() => 0.5 - Math.random());
-                    renderContentList(filteredContent);
+                     filteredContent = [...allContent].sort(() => 0.5 - Math.random());
+                     renderContentList(filteredContent);
                 }
                  updateNavActiveState(`nav-${filterType}`);
                  window.scrollTo(0, scrollPositions[currentFilter]);
@@ -1013,7 +1047,7 @@
                 contentGrid.innerHTML = '';
                 contentArray.forEach(content => renderContentCard(content, contentGrid));
                 if (contentArray.length > 0) {
-                    renderFeaturedBanner(contentArray[0]);
+                    startBannerRotation(contentArray);
                 }
             }
             
@@ -1108,7 +1142,7 @@
                     // Update local content array
                     allContent = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     if (catalogCountSpan) catalogCountSpan.textContent = allContent.length;
-
+                    
                     // Update admin list
                     contentList.innerHTML = '';
                     allContent.forEach(content => {
@@ -1141,7 +1175,7 @@
                         } else {
                             contentGrid.innerHTML = '';
                             allContent.slice(0, PAGE_SIZE).forEach(content => renderContentCard(content, contentGrid));
-                            if(allContent.length > 0) renderFeaturedBanner(allContent[0]);
+                            startBannerRotation(allContent);
                             renderDynamicCollections(allContent);
                         }
                     }
@@ -1155,7 +1189,7 @@
                 onSnapshot(collection(db, `artifacts/${APP_ID}/public/data/notifications`), (snapshot) => {
                     // Ordena as notificações por timestamp em ordem decrescente
                     const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                                                     .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                                                              .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
                     
                     const count = notifications.length;
                     notificationBadge.textContent = count;
@@ -1191,6 +1225,7 @@
             
             // --- Renderização de UI ---
             function renderFeaturedBanner(content) {
+                if (!content) return;
                 featuredBanner.classList.remove('hidden');
                 const backdropUrl = content.backdrop_path ? `${IMAGE_BASE_URL}w1280${content.backdrop_path}` : 'https://placehold.co/1280x720/1a1a1a/cccccc?text=Sem+Banner';
                 featuredBanner.innerHTML = `
@@ -1688,7 +1723,10 @@
             // --- Gerenciamento da Lista de Favoritos ---
             async function addToMyList(content) {
                 const userListRef = auth.currentUser ? doc(db, `artifacts/${APP_ID}/users/${auth.currentUser.uid}/my_list`, content.id) : null;
-                if (!userListRef) return;
+                if (!userListRef) {
+                    showTempMessage("Erro: usuário não autenticado.", false);
+                    return;
+                }
                 try {
                     await setDoc(userListRef, content);
                     showTempMessage("Conteúdo adicionado à sua lista!");
@@ -1700,7 +1738,10 @@
             
             async function removeFromMyList(contentId) {
                 const userListRef = auth.currentUser ? doc(db, `artifacts/${APP_ID}/users/${auth.currentUser.uid}/my_list`, contentId) : null;
-                if (!userListRef) return;
+                if (!userListRef) {
+                    showTempMessage("Erro: usuário não autenticado.", false);
+                    return;
+                }
                 try {
                     await deleteDoc(userListRef);
                     showTempMessage("Conteúdo removido da sua lista!");
@@ -1792,9 +1833,9 @@
                 featuredBanner.classList.add('hidden');
                 releaseGridSection.classList.add('hidden');
                 resultsContainer.innerHTML = `<div class="flex items-center justify-center p-8">
-                                                    <i class="fa-solid fa-spinner animate-spin mr-3 h-8 w-8 text-blue-500" aria-hidden="true"></i>
-                                                    <p class="text-zinc-900 dark:text-white">Buscando...</p>
-                                                </div>`;
+                                                 <i class="fa-solid fa-spinner animate-spin mr-3 h-8 w-8 text-blue-500" aria-hidden="true"></i>
+                                                 <p class="text-zinc-900 dark:text-white">Buscando...</p>
+                                             </div>`;
                 
                 try {
                     const queryLowercase = searchQuery.toLowerCase().trim();
@@ -2082,14 +2123,14 @@
                     urlInput.required = true;
                     
                     urlInput.addEventListener('keydown', (e) => {
-                         if (e.key === 'Enter') {
+                          if (e.key === 'Enter') {
                             e.preventDefault();
                             const nextInput = urlInput.closest('.episode-field').nextElementSibling?.querySelector('input[name="url"]');
                             if (nextInput) {
                                 nextInput.focus();
                                 nextInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }
-                         }
+                          }
                     });
 
 
@@ -2123,6 +2164,8 @@
                 });
 
                 async function addNotification(contentId, title, posterPath, message) {
+                     // Adicione esta verificação. Se o usuário não for um admin logado, não deve haver a possibilidade de criar notificações.
+                     if(!isAdmin) return;
                     try {
                         await addDoc(collection(db, `artifacts/${APP_ID}/public/data/notifications`), {
                             contentId: contentId,
@@ -2134,6 +2177,8 @@
                         console.log("Notificação adicionada!");
                     } catch (error) {
                         console.error("Erro ao adicionar notificação:", error);
+                        // O erro de permissão é esperado aqui se as regras do Firestore não permitirem a escrita.
+                        // As regras devem ser: allow write: if request.auth != null;
                     }
                 }
 
@@ -2173,7 +2218,7 @@
                                 const resultElement = document.createElement('div');
                                 resultElement.className = 'flex items-center space-x-4 p-2 cursor-pointer hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-xl transition-colors';
                                 resultElement.innerHTML = `
-                                    <img src="${posterPath}" alt="Pôster de ${title}" class="w-12 h-18 rounded-xl">
+                                    <img src="${posterUrl}" alt="Pôster de ${title}" class="w-12 h-18 rounded-xl">
                                     <div>
                                         <p class="font-bold">${title}</p>
                                         <p class="text-sm text-gray-600 dark:text-gray-400">(${year}) - ${mediaTypeLabel}</p>
@@ -2254,6 +2299,11 @@
                 contentForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     
+                    if (!isAdmin) {
+                        showTempMessage("Você não tem permissão para publicar conteúdo.", false);
+                        return;
+                    }
+
                     // Mostra barra de carregamento e desabilita botão
                     loadingBar.style.width = '50%';
                     publishBtn.disabled = true;
@@ -2297,8 +2347,9 @@
                         }).filter(link => link.url);
                         
                         if (isUpdate) {
-                            if (JSON.stringify(oldContent.links) !== JSON.stringify(links)) {
-                                notificationMessage = `Links atualizados para: ${contentTitle.value}`;
+                             const oldLinks = oldContent.links || [];
+                            if (JSON.stringify(oldLinks) !== JSON.stringify(links)) {
+                                notificationMessage = `Link(s) atualizado(s) para: ${contentTitle.value}`;
                             } else {
                                 notificationMessage = `Conteúdo atualizado: ${contentTitle.value}`;
                             }
@@ -2323,19 +2374,18 @@
                         if(isUpdate) {
                             const oldSeasons = oldContent.links || [];
                             const newSeasons = links || [];
+
                             if (newSeasons.length > oldSeasons.length) {
-                                notificationMessage = `Nova temporada adicionada: ${contentTitle.value}`;
-                            } else if (JSON.stringify(newSeasons) !== JSON.stringify(oldSeasons)) {
-                                // Check if new episodes were added
+                                notificationMessage = `Nova temporada chegou para: ${contentTitle.value}`;
+                            } else {
                                 const oldEpisodeCount = oldSeasons.reduce((acc, season) => acc + (season.episodes?.length || 0), 0);
                                 const newEpisodeCount = newSeasons.reduce((acc, season) => acc + (season.episodes?.length || 0), 0);
                                 if (newEpisodeCount > oldEpisodeCount) {
                                     const newEpisodes = newSeasons.flatMap(s => s.episodes).filter(ne => !oldSeasons.some(os => os.episodes.some(oe => oe.url === ne.url)));
-                                    const newEpisodeNumbers = newEpisodes.map(ep => ep.episodeNumber).filter(Boolean);
-                                    if(newEpisodeNumbers.length > 0) {
-                                        notificationMessage = `Novos episódios adicionados: ${newEpisodeNumbers.join(', ')} de ${contentTitle.value}`;
+                                    if(newEpisodes.length > 0) {
+                                        notificationMessage = `Episódio novo adicionado (${newEpisodes[0].episodeNumber}) em: ${contentTitle.value}`;
                                     } else {
-                                        notificationMessage = `Episódios atualizados para: ${contentTitle.value}`;
+                                        notificationMessage = `Conteúdo atualizado: ${contentTitle.value}`;
                                     }
                                 } else {
                                     notificationMessage = `Conteúdo atualizado: ${contentTitle.value}`;
@@ -2351,7 +2401,8 @@
                         }).filter(link => link.url);
                         
                         if (isUpdate) {
-                            if (JSON.stringify(oldContent.links) !== JSON.stringify(links)) {
+                            const oldLinks = oldContent.links || [];
+                            if (JSON.stringify(oldLinks) !== JSON.stringify(links)) {
                                 notificationMessage = `Links da coleção atualizados para: ${contentTitle.value}`;
                             } else {
                                 notificationMessage = `Conteúdo atualizado: ${contentTitle.value}`;
@@ -2468,6 +2519,10 @@
                             formTitle.textContent = `Editando: ${data.title}`;
                         }
                     } else if (button.classList.contains('delete-feedback-btn')) {
+                         if (!isAdmin) {
+                            showTempMessage("Você não tem permissão para excluir feedbacks.", false);
+                            return;
+                        }
                         try {
                             await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/feedbacks`, id));
                             console.log("Feedback excluído!");
@@ -2477,16 +2532,20 @@
                             showTempMessage("Erro ao excluir feedback. Verifique o console.", false);
                         }
                     } else if (button.classList.contains('remove-from-list-btn')) {
-                        contentToRemoveFromList = button.dataset.id;
-                        myListDeleteModal.classList.add('active');
+                         contentToRemoveFromList = button.dataset.id;
+                         myListDeleteModal.classList.add('active');
                     } else if (button.classList.contains('remove-notification-btn')) {
-                         try {
-                            await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/notifications`, id));
-                            showTempMessage("Notificação removida!");
-                        } catch (error) {
-                            console.error("Erro ao remover notificação:", error);
-                            showTempMessage("Erro ao remover notificação. Verifique o console.", false);
+                        if (!isAdmin) {
+                            showTempMessage("Você não tem permissão para remover notificações.", false);
+                            return;
                         }
+                         try {
+                             await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/notifications`, id));
+                             showTempMessage("Notificação removida!");
+                         } catch (error) {
+                             console.error("Erro ao remover notificação:", error);
+                             showTempMessage("Erro ao remover notificação. Verifique o console.", false);
+                         }
                     }
                 });
                 
@@ -2513,7 +2572,7 @@
                         const querySnapshot = await getDocs(myListRef);
                         const deletePromises = [];
                         querySnapshot.forEach(doc => {
-                            deletePromises.push(deleteDoc(doc.ref));
+                             deletePromises.push(deleteDoc(doc.ref));
                         });
                         await Promise.all(deletePromises);
                         showTempMessage("Todos os conteúdos foram removidos da sua lista!");
@@ -2528,6 +2587,12 @@
 
 
                 confirmDeleteButton.addEventListener('click', async () => {
+                    if (!isAdmin) {
+                        showTempMessage("Você não tem permissão para excluir conteúdo.", false);
+                        confirmationModal.classList.remove('active');
+                        return;
+                    }
+
                     if (contentToDelete) {
                         try {
                             await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/content`, contentToDelete));
@@ -2557,7 +2622,15 @@
                         const contentId = notifItem.dataset.contentId;
                         try {
                              // Delete notification after clicking on it to see the content
-                            await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/notifications`, notifId));
+                            // Notificações públicas devem ser lidas por todos, então esta lógica de exclusão só funciona para admins com as regras de segurança corretas.
+                            // Para usuários normais, o clique apenas deve fechar o modal.
+                            if(isAdmin) {
+                                await deleteDoc(doc(db, `artifacts/${APP_ID}/public/data/notifications`, notifId));
+                                showTempMessage("Notificação removida!");
+                            } else {
+                                // Para usuários normais, apenas fecha o modal
+                                showTempMessage("Notificação visualizada!");
+                            }
                             notificationsModal.classList.remove('active');
                             fetchAndRenderDetailsPage(contentId);
                         } catch (error) {
@@ -2567,6 +2640,11 @@
                 });
 
                 clearAllNotificationsBtn.addEventListener('click', async () => {
+                    if (!isAdmin) {
+                        showTempMessage("Você não tem permissão para limpar as notificações.", false);
+                        return;
+                    }
+
                     const q = query(collection(db, `artifacts/${APP_ID}/public/data/notifications`));
                     const querySnapshot = await getDocs(q);
                     const deletePromises = [];
@@ -2639,6 +2717,11 @@
                 feedbackModal.classList.remove('active');
             });
             submitFeedbackButton.addEventListener('click', async () => {
+                 if (!auth.currentUser) {
+                    showTempMessage("Você precisa estar autenticado para enviar feedback.", false);
+                    return;
+                }
+
                 const feedbackType = document.querySelector('input[name="feedback-type"]:checked')?.value || 'Nenhum';
                 const message = feedbackMessageInput.value;
 
