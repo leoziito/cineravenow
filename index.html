@@ -204,12 +204,27 @@
             opacity: 1;
         }
         
-        @media (max-width: 640px) {
+        /* CORREÇÃO CRÍTICA: Força o modal a ocupar a tela inteira em mobile/pequenas telas */
+        #detail-modal-content {
+             margin-top: 0 !important;
+             height: 100vh !important;
+             max-width: 100% !important;
+             border-radius: 0 !important;
+        }
+        /* Fixa o header do detalhe e permite a rolagem apenas no conteúdo abaixo */
+        #detail-modal-content > div:nth-child(2) {
+             /* O segundo div é o flex-1 overflow-y-auto p-6 space-y-6 */
+             height: auto;
+             max-height: calc(100% - 64px); /* Ajuste se necessário para telas menores */
+             overflow-y: auto;
+        }
+
+        @media (min-width: 640px) {
              #detail-modal-content {
-                /* Força o modal de detalhes a ser tela cheia em telas pequenas */
-                border-radius: 0 !important; 
-                height: 100vh !important;
-                margin-top: 0 !important;
+                height: 90vh !important;
+                max-width: 64rem !important; /* max-w-6xl */
+                border-radius: 0.75rem !important;
+                margin-top: 2rem !important;
              }
         }
         
@@ -282,11 +297,19 @@
             border-radius: 3px;
         }
 
-        /* Ajuste do grid do Explore para 3 colunas em telas maiores (lg+) */
-        @media (min-width: 1024px) {
+        /* Ajuste do grid do Explore para 3 colunas em todas as telas > sm */
+        @media (min-width: 640px) {
             #explore-results {
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
+        }
+        /* Garante que o input de filtro seja menor */
+        #explore-panel .input-style {
+            padding: 0.5rem;
+            font-size: 0.875rem; /* text-sm */
+        }
+        #explore-panel .select-style {
+            padding-right: 2rem;
         }
 
     </style>
@@ -339,7 +362,11 @@
             </div>
 
             <div class="flex-1 overflow-y-auto p-6 space-y-6">
-                <h2 id="detail-title" class="text-3xl sm:text-4xl font-extrabold">Título do Conteúdo</h2>
+                <h2 id="detail-title" class="text-3xl sm:text-4xl font-extrabold flex items-center space-x-3">
+                    <span>Título do Conteúdo</span>
+                    <!-- Selo de Temporadas (Apenas Séries) -->
+                    <span id="series-seasons-badge" class="text-xs font-semibold uppercase bg-blue-500 text-white px-2 py-1 rounded-full hidden"></span>
+                </h2>
                 <div class="flex flex-wrap items-center space-x-4 text-sm opacity-70 mb-4">
                     <span id="detail-type-year" class="font-semibold">Tipo | Ano</span>
                     <span id="detail-genres">Gêneros</span>
@@ -351,17 +378,12 @@
                     <span id="watch-btn-text">Assistir Agora</span>
                 </button>
 
-                <!-- NOVO: Link Copiável e Ícone de Compartilhamento -->
+                <!-- Link Copiável e Ícone de Compartilhamento -->
                 <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
                     <!-- Botão de Copiar Link -->
                     <button id="copy-link-btn" class="flex-1 py-2 px-4 rounded-lg bg-gray-500 text-white hover:bg-gray-600 transition duration-200 flex items-center justify-center space-x-2 text-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07L13 7"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07L11 17"/></svg>
                         <span id="link-text" class="truncate w-full text-center">Copiar Link</span>
-                    </button>
-                    <!-- Botão de Abrir Link (Abre o link principal) -->
-                    <button id="open-link-btn" class="sm:w-auto py-2 px-4 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition duration-200 flex items-center justify-center space-x-2 text-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
-                        Abrir Link Principal
                     </button>
                 </div>
                 
@@ -478,46 +500,44 @@
         <div class="p-6 flex flex-col h-full border-r border-gray-700/10 dark:border-white/10">
             
             <!-- Botão Admin (NO TOPO) -->
-            <button id="admin-button" class="bg-accent-theme hover:opacity-90 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200 mb-4">
+            <button id="admin-button" class="bg-accent-theme hover:opacity-90 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-200 mb-4">
                 Admin
             </button>
 
             <!-- NOVO BOTÃO: OCULTAR CONTINUE ASSISTINDO -->
-            <button id="toggle-continue-watching" class="w-full text-center bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200 mb-4 flex items-center justify-center space-x-2">
+            <button id="toggle-continue-watching" class="w-full text-center bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-200 mb-4 flex items-center justify-center space-x-1 text-sm">
                 <span id="continue-watching-text"><!-- Texto e ícone injetados via JS --></span>
             </button>
 
             <!-- NOVO BOTÃO: REPORTAR ERRO -->
-            <button id="report-error-btn" class="w-full text-center bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200 mb-8">
-                Reportar Erro ou Sugestão
+            <button id="report-error-btn" class="w-full text-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-200 mb-8 text-sm">
+                Reportar Erro/Sugestão
             </button>
 
             <!-- NOVO BOTÃO: DOAÇÃO -->
-            <a href="https://livepix.gg/cinerave" target="_blank" class="w-full text-center bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200 mb-4 flex items-center justify-center space-x-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-                <span>Doação</span>
+            <a href="https://livepix.gg/cinerave" target="_blank" class="w-full text-center bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-4 rounded-lg shadow-md transition duration-200 mb-4 text-sm">
+                Doação
             </a>
 
             <!-- NOVO BOTÃO: PEDIDOS -->
-            <a href="https://chat.whatsapp.com/Lidb3f8U9SsDe10kiLVICR" target="_blank" class="w-full text-center bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200 mb-4 flex items-center justify-center space-x-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.7 4.5 1 6.8 1 1.7 0 3.4-.2 5.1-.5 3.3-.9 6.2-3.1 8.2-5.9 1.1-1.5 1.8-3.3 2.1-5.1.3-1.6.3-3.3.1-4.9zM19 8c-3.1 1.5-6.8 2-10 1.5M10 12c-2.3 1.2-4.8 1.8-7.3 1.8"/></svg>
-                <span>Pedidos (WhatsApp)</span>
+            <a href="https://chat.whatsapp.com/Lidb3f8U9SsDe10kiLVICR" target="_blank" class="w-full text-center bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-200 mb-4 text-sm">
+                Pedidos (WhatsApp)
             </a>
 
             <!-- NOVO BOTÃO: AVISO LEGAL -->
-            <button id="legal-notice-btn" class="w-full text-center bg-gray-700 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-200 mb-8">
+            <button id="legal-notice-btn" class="w-full text-center bg-gray-700 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-200 mb-8 text-sm">
                 Aviso Legal
             </button>
 
 
             <!-- Rodapé (Desenvolvido por Leonardo + Versão + UID) -->
             <div class="mt-auto pt-4 border-t border-gray-700/10 dark:border-white/10 space-y-1">
-                <p class="footer-text">Desenvolvido por Leonardo</p>
                 <p class="footer-text" id="app-version-display">Versão 2.3.6</p>
                 <div class="break-words text-center pt-1">
                     <p class="footer-text !text-[0.6rem] !opacity-60">UID:</p>
                     <p class="footer-text !text-[0.55rem] font-mono !opacity-80" id="user-uid-display">Carregando...</p>
                 </div>
+                <p class="footer-text">Desenvolvido por Leonardo</p>
             </div>
         </div>
     </aside>
@@ -731,7 +751,7 @@
 
         // --- 0. Firebase Setup (Inicialização) ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, collection, onSnapshot, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
@@ -812,7 +832,6 @@
         
         // Elementos do Link Copiável
         const copyLinkBtn = document.getElementById('copy-link-btn');
-        const openLinkBtn = document.getElementById('open-link-btn');
         const linkText = document.getElementById('link-text');
 
 
@@ -844,6 +863,7 @@
         const watchBtnText = document.getElementById('watch-btn-text');
         const seriesLinksPanel = document.getElementById('series-links-panel');
         const seasonsLinksContainer = document.getElementById('seasons-links-container');
+        const seriesSeasonsBadge = document.getElementById('series-seasons-badge');
 
         // Elementos do Modal de Feedback
         const feedbackModal = document.getElementById('feedback-modal');
@@ -872,7 +892,6 @@
         // Lógica de visualização de episódios
         const WATCHED_EPISODES_KEY = 'cinerave_watched_episodes';
         let watchedEpisodes = JSON.parse(localStorage.getItem(WATCHED_EPISODES_KEY) || '{}');
-
 
         // TMDB Config
         const TMDB_API_KEY = 'd0f7e2c414b1efff7b000ae9b681ed1b';
@@ -1570,10 +1589,24 @@
                 addEpisodeBtn.dataset.season = newSeasonNum;
 
                 // Renumerar episódios dentro da temporada (se for o caso)
-                const episodeFields = panel.querySelectorAll('.episode-field');
+                const episodeContainer = panel.querySelector('.episodes-container');
+                const episodeFields = episodeContainer.querySelectorAll('.episode-field');
+                
                 episodeFields.forEach((epField, epIndex) => {
                     const newEpNum = epIndex + 1;
                     epField.querySelector('h6').textContent = `Episódio ${newEpNum}`;
+                    
+                    const isEpisodeOne = (newEpNum === 1);
+                    const selectQualidade = epField.querySelector('[name="qualidade"]');
+                    const selectIdioma = epField.querySelector('[name="idioma"]');
+
+                    if (isEpisodeOne) {
+                        selectQualidade.classList.remove('hidden');
+                        selectIdioma.classList.remove('hidden');
+                    } else if (selectQualidade.hasAttribute('data-auto-filled')) {
+                        selectQualidade.classList.add('hidden');
+                        selectIdioma.classList.add('hidden');
+                    }
                 });
             });
             document.getElementById('num-seasons').value = seasonPanels.length;
@@ -1691,6 +1724,7 @@
 
                 // Adiciona o novo episódio
                 addEpisodeLinkField(episodeContainer, seasonNum, currentEpisodeCount, linkData, false);
+                renumberSeasons();
             });
 
             updateEpisodes();
@@ -1708,17 +1742,17 @@
             
             // Renumerar episódios restantes na temporada
             const episodeContainer = seasonPanel.querySelector('.episodes-container');
-            const episodeFields = episodeContainer.querySelectorAll('.episode-field');
             const numEpisodesInput = seasonPanel.querySelector('.num-episodes-input');
             
+            const episodeFields = episodeContainer.querySelectorAll('.episode-field');
             numEpisodesInput.value = episodeFields.length;
             
             episodeFields.forEach((epField, epIndex) => {
                  const newEpNum = epIndex + 1;
                  epField.querySelector('h6').textContent = `Episódio ${newEpNum}`;
-                 // Aqui, se o primeiro episódio for removido, o novo primeiro terá os campos visíveis.
-                 const isEpisodeOne = (newEpNum === 1);
                  
+                 // Lógica para garantir que o NOVO EP 1 tenha os campos visíveis.
+                 const isEpisodeOne = (newEpNum === 1);
                  const selectQualidade = epField.querySelector('[name="qualidade"]');
                  const selectIdioma = epField.querySelector('[name="idioma"]');
 
@@ -1730,6 +1764,7 @@
                      selectIdioma.classList.add('hidden');
                  }
             });
+            renumberSeasons(); // Chama o renumber global para garantir a contagem de temporadas
         }
 
         // Adiciona o parâmetro isEpisodeOne
@@ -2146,6 +2181,7 @@
                 
                 renderEditList(publishedContent);
                 renderPage(currentActivePage); 
+                checkDeepLink(); // Verifica se há um modal a ser reaberto
             }, (error) => {
                 console.error("Erro ao ouvir o Firestore (Content):", error);
                 contentListContainer.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-lg">Erro ao carregar conteúdo: ${error.message}</div>`;
@@ -2484,12 +2520,12 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 mt-8">
-                        <button id="apply-filters-btn" class="w-full sm:w-1/2 py-3 bg-red-600 text-white font-bold rounded-lg shadow-xl hover:bg-red-700 transition duration-300">
+                        <button id="apply-filters-btn" class="w-full sm:w-1/2 py-2 px-4 bg-red-600 text-white font-bold rounded-lg shadow-xl hover:bg-red-700 transition duration-300 text-sm">
                             Aplicar Filtros
                         </button>
-                        <button id="surprise-me-btn" class="w-full sm:w-1/2 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-300">
+                        <button id="surprise-me-btn" class="w-full sm:w-1/2 py-2 px-4 bg-blue-600 text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-300 text-sm">
                              <span class="flex items-center justify-center space-x-2">
-                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M12 21V3"/><path d="M17 21V3"/><path d="M21 12H13"/></svg>
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12H3"/><path d="M12 21V3"/><path d="M17 21V3"/><path d="M21 12H13"/></svg>
                                  <span>Surpreenda-me!</span>
                              </span>
                         </button>
@@ -2499,7 +2535,7 @@
                 <div class="text-center mb-6">
                     <p id="results-count" class="text-xl font-bold opacity-80"></p>
                 </div>
-                <div id="explore-results" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+                <div id="explore-results" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4">
                     <!-- Conteúdo filtrado/ordenado será injetado aqui -->
                     <p class="col-span-full text-center opacity-70">Aguardando filtros para exibir resultados.</p>
                 </div>
@@ -2679,18 +2715,18 @@
 
         function getUnwatchedIcon() {
             // CORRIGIDO: Icone de Olho Cortado (Não Visto - Lucide: EyeOff)
-            return `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 5.8 12 12M12 12 6.1 18.2M12 12V3M12 12h9M12 12H3"/><circle cx="12" cy="12" r="10"/></svg>`;
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 5.8 12 12M12 12 6.1 18.2M12 12V3M12 12h9M12 12H3"/><path d="M12 17.5s3 7 10 7 10-7 10-7"/><path d="M2 12s3-7 10-7 10 7 10 7"/></svg>`;
         }
 
         // Função para copiar o link da página atual (simulada com content ID)
         window.copyLinkToClipboard = (contentId, title) => {
              // Simula o link real para a página de detalhes
-             const simulatedLink = `https://cinerave.app/details?id=${contentId}`; 
+             const simulatedLink = `${window.location.origin}${window.location.pathname}?id=${contentId}`; 
 
              // Uso de API de Clipboard (moderna)
              if (navigator.clipboard) {
                  navigator.clipboard.writeText(simulatedLink).then(() => {
-                     linkText.textContent = `Link Copiado! (${title})`;
+                     linkText.textContent = `Link Copiado!`;
                      setTimeout(() => linkText.textContent = `Copiar Link`, 2000);
                  }).catch(err => {
                      console.error('Falha ao copiar:', err);
@@ -2724,6 +2760,11 @@
 
         function closeDetailModal() {
             detailModal.classList.remove('active');
+            // Remove a classe de bloqueio de rolagem do body
+            document.body.classList.remove('overflow-hidden'); 
+            // Limpa o estado da sessão para não reabrir
+            sessionStorage.removeItem('detailContentId');
+
             // Limpa o estado dinâmico
             seriesLinksPanel.classList.add('hidden');
         }
@@ -2743,11 +2784,6 @@
 
 
         function showDetailModal(content) {
-            // RASTREIA O CONTEÚDO AO ABRIR O MODAL
-            if (content.type === 'series') {
-                trackViewedContent(content);
-            }
-
             // 1. Preencher Campos Base
             detailTitle.textContent = content.title;
             detailHeader.style.backgroundImage = `url(${content.poster_url})`;
@@ -2760,11 +2796,16 @@
             // Configura Link Copiável
             linkText.textContent = `Copiar Link`;
             copyLinkBtn.onclick = () => window.copyLinkToClipboard(content.id, content.title);
-            
+
+            // CORREÇÃO CRÍTICA: RASTREIA e BLOQUEIA ROLAGEM
+            sessionStorage.setItem('detailContentId', content.id);
+            document.body.classList.add('overflow-hidden'); 
+
             // 2. Lógica Específica (Filme vs Série)
             
             // Limpa painéis dinâmicos
             seriesLinksPanel.classList.add('hidden');
+            seriesSeasonsBadge.classList.add('hidden');
             
             // Recria o botão principal (para limpar listeners antigos)
             const oldMainWatchBtn = document.getElementById('main-watch-btn');
@@ -2780,8 +2821,7 @@
 
                 if (content.links && content.links.length > 0) {
                     const firstLink = content.links[0];
-                    openLinkBtn.onclick = () => openLinkInNewTab(firstLink.url);
-
+                    
                     newMainWatchBtn.addEventListener('click', () => {
                          // Redirecionamento direto para a URL do primeiro link
                          openLinkInNewTab(firstLink.url);
@@ -2790,7 +2830,6 @@
                      newMainWatchBtn.disabled = true;
                      newMainWatchBtn.classList.add('opacity-50', 'cursor-not-allowed');
                      watchBtnText.textContent = 'Nenhum Link Disponível';
-                     openLinkBtn.onclick = null;
                 }
 
             } else if (content.type === 'series') {
@@ -2799,8 +2838,14 @@
                 watchBtnText.textContent = 'Ver Temporadas e Episódios';
                 newMainWatchBtn.disabled = false;
                 newMainWatchBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                openLinkBtn.onclick = null; // Desabilita o botão de abrir link principal (não faz sentido para séries)
                 
+                // Renderiza o badge de temporadas
+                const seasonCount = content.seasons?.length || 0;
+                if (seasonCount > 0) {
+                    seriesSeasonsBadge.textContent = `${seasonCount} Temporada${seasonCount > 1 ? 's' : ''}`;
+                    seriesSeasonsBadge.classList.remove('hidden');
+                }
+
                 // Renderiza a estrutura completa de temporadas/episódios
                 renderSeriesLinksDetail(content);
                 seriesLinksPanel.classList.remove('hidden'); // Exibe o painel de links
@@ -2820,6 +2865,7 @@
                      const scrollContainer = document.getElementById('detail-modal-content').querySelector('.overflow-y-auto');
                      const targetOffset = seriesLinksPanel.offsetTop - 20; // 20px de margem
                      
+                     // Rola a área de conteúdo do modal
                      scrollContainer.scrollTo({ top: targetOffset, behavior: 'smooth' });
                 });
             }
@@ -2827,6 +2873,21 @@
             // 3. Abrir Modal
             detailModal.classList.add('active');
         }
+
+        // NOVO: Função para verificar se há um deep link salvo
+        function checkDeepLink() {
+            const contentId = sessionStorage.getItem('detailContentId');
+            if (contentId && publishedContent.length > 0) {
+                const content = publishedContent.find(c => c.id === contentId);
+                if (content) {
+                    // Timeout para garantir que o DOM está pronto após o listener do Firestore
+                    setTimeout(() => showDetailModal(content), 100);
+                } else {
+                    sessionStorage.removeItem('detailContentId');
+                }
+            }
+        }
+
 
         // Funções de Renderização de Links de Detalhes
         // Recebe o objeto de conteúdo completo para acessar o ID
@@ -2980,14 +3041,14 @@
                 toggleContinueWatchingBtn.classList.remove('bg-gray-500', 'hover:bg-gray-600');
                 toggleContinueWatchingBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
                 continueWatchingText.innerHTML = `
-                    ${getUnwatchedIcon().replace('width="20" height="20"', 'width="20" height="20"').replace('text-gray-400', 'text-white')}
+                    ${getUnwatchedIcon().replace('width="20" height="20"', 'width="16" height="16"').replace('text-gray-400', 'text-white')}
                     <span>Mostrar Continue Assistindo</span>
                 `;
             } else {
                 toggleContinueWatchingBtn.classList.add('bg-gray-500', 'hover:bg-gray-600');
                 toggleContinueWatchingBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
                 continueWatchingText.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M5 12h14"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M5 12h14"/></svg>
                     <span>Ocultar Continue Assistindo</span>
                 `;
             }
@@ -3013,6 +3074,8 @@
 
         // --- 16. Inicialização (Página Padrão) ---
         renderPage('inicio');
+        // A verificação de deep link foi movida para o listener do Firestore (setupFirestoreListeners)
+        // para garantir que os dados de publishedContent estejam carregados.
 
     </script>
 </body>
