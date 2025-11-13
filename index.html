@@ -2703,7 +2703,7 @@
                  tags.push({ text: `4K`, color: '#10B981', textColor: '#fff' }); 
              }
              if (seals.cinema_quality) {
-                 tags.push({ text: `QUALIDADE CINEMA`, color: '#DC2626', textColor: '#fff' }); 
+                 tags.push({ text: `CINEMA`, color: '#DC2626', textColor: '#fff' }); 
              }
              
              if (tags.length === 0) {
@@ -4151,7 +4151,7 @@
 
             if (comingSoonMoviesAndSeries.length > 0) {
                  carouselsContainer.insertAdjacentHTML('beforeend', '<div id="coming-soon-movies-series-carousel"></div>');
-                 renderCarousel(comingSoonMoviesAndSeries, "Em Breve no CINERAVE", 'coming-soon-movies-series-carousel', false, true);
+                 renderCarousel(comingSoonMoviesAndSeries, "Em Breve", 'coming-soon-movies-series-carousel', false, true);
             }
             
             const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -4170,32 +4170,32 @@
             if (topMovies.length > 0) {
                 const containerId = 'top-movies-carousel';
                 carouselsContainer.insertAdjacentHTML('beforeend', `<div id="${containerId}"></div>`);
-                renderCarousel(topMovies, "🏆 Top 10 Filmes Mais Assistidos", containerId, true);
+                renderCarousel(topMovies, "Top 10 Filmes", containerId, true);
             }
 
             const topTV = sortByPlayCount(tv).slice(0, 10);
             if (topTV.length > 0) {
                 const containerId = 'top-tv-carousel';
                 carouselsContainer.insertAdjacentHTML('beforeend', `<div id="${containerId}"></div>`);
-                renderCarousel(topTV, "📺 Top 10 Séries Mais Assistidas", containerId, true);
+                renderCarousel(topTV, "Top 10 Séries", containerId, true);
             }
 
             const premiumContent = releasedContent.filter(c => c.seals?.premium);
             if (premiumContent.length > 0) {
                  carouselsContainer.insertAdjacentHTML('beforeend', '<div id="premium-carousel"></div>');
-                 renderCarousel(premiumContent, "✨ Catálogo Premium", 'premium-carousel');
+                 renderCarousel(premiumContent, "Catálogo Premium", 'premium-carousel');
             }
             
             const driveContent = releasedContent.filter(c => c.seals?.drive);
             if (driveContent.length > 0) {
                  carouselsContainer.insertAdjacentHTML('beforeend', '<div id="drive-carousel"></div>');
-                 renderCarousel(driveContent, "📁 Drives Exclusivos", 'drive-carousel');
+                 renderCarousel(driveContent, "Drives Exclusivos", 'drive-carousel');
             }
             
             const telegramContent = releasedContent.filter(c => c.seals?.telegram);
             if (telegramContent.length > 0) {
                  carouselsContainer.insertAdjacentHTML('beforeend', '<div id="telegram-carousel"></div>');
-                 renderCarousel(telegramContent, "💬 Canais Telegram", 'telegram-carousel');
+                 renderCarousel(telegramContent, "Canais Telegram", 'telegram-carousel');
             }
 
             const fourKContent = movies.filter(c => c.seals?.['4k']);
