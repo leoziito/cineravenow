@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CINERAVE</title>
+    
+    <!-- Importando a fonte Montserrat do Google Fonts para todo o site -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* Reset básico e configurações globais */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            /* Fundo totalmente preto conforme solicitado */
+            background-color: #000000;
+            /* Toda fonte do site igual à logo */
+            font-family: 'Montserrat', sans-serif;
+            color: #ffffff;
+            /* Ocultar barra de rolagem horizontal se houver */
+            overflow-x: hidden;
+        }
+
+        /* Estilização do Header (Topo) */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 30px 20px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            /* Fundo com leve desfoque, mas sem linhas divisórias */
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            /* Transição suave para o efeito de esconder/mostrar no scroll */
+            transition: transform 0.4s cubic-bezier(0.3, 0, 0.2, 1);
+        }
+
+        /* Classe adicionada via JavaScript para esconder o menu */
+        header.hide {
+            transform: translateY(-100%);
+        }
+
+        /* Estilo da Logo CINERAVE - Efeito Metalizado (Cinza mesclado com branco) */
+        .logo {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: 15px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            /* Criando o gradiente metalizado */
+            background: linear-gradient(
+                to bottom,
+                #ffffff 0%,
+                #e6e6e6 20%,
+                #8c8c8c 50%,
+                #cccccc 80%,
+                #ffffff 100%
+            );
+            background-size: 100% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            /* Sombra sutil para dar profundidade ao metal */
+            filter: drop-shadow(0px 4px 10px rgba(255, 255, 255, 0.15));
+            text-align: center;
+            /* Permite que spans internos herdem o estilo de texto */
+            display: inline-block; 
+        }
+
+        /* Classe específica para inverter a última letra 'E' */
+        .inverted-e {
+            display: inline-block; /* Necessário para aplicar transformações */
+            transform: scaleX(-1); /* Espelha a letra horizontalmente */
+        }
+
+        /* Container de Navegação */
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Espaçamento maior entre as abas para que cada uma seja única e isolada */
+            gap: 40px; 
+        }
+
+        /* Estilo das Abas de Navegação (Minimalista, sem bolha, centralizado e pequeno) */
+        .nav-tab {
+            text-decoration: none;
+            color: #8c8c8c; /* Cinza claro inicial */
+            font-size: 0.75rem; /* Tamanho pequeno */
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            transition: color 0.3s ease;
+            position: relative;
+            cursor: pointer; /* Garante que o mouse fique com a mãozinha ao passar por cima */
+        }
+
+        /* Efeito de Hover nas Abas (Apenas brilha o texto, sem fundo/borda) */
+        .nav-tab:hover {
+            color: #ffffff;
+        }
+
+        /* Área de conteúdo vazia para simular rolagem infinita */
+        .infinite-scroll-area {
+            /* Altura massiva para permitir bastante rolagem */
+            height: 500vh; 
+            width: 100%;
+            /* Espaço no topo para não ficar escondido atrás do header no início */
+            padding-top: 250px; 
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* Responsividade para telas menores (Celulares) */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2rem;
+                letter-spacing: 8px;
+                margin-bottom: 10px;
+            }
+            .nav-tab {
+                font-size: 0.65rem;
+                letter-spacing: 3px;
+            }
+            nav {
+                gap: 25px; /* Reduz um pouco o espaçamento no celular */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Cabeçalho contendo Logo e Navegação -->
+    <header id="main-header">
+        <!-- A última letra 'E' foi envolvida em um span com a classe 'inverted-e' para ser espelhada -->
+        <h1 class="logo">CINERAV<span class="inverted-e">E</span></h1>
+        <nav>
+            <!-- Usando javascript:void(0); anula QUALQUER comportamento de clique nativo do navegador -->
+            <a href="javascript:void(0);" class="nav-tab">Início</a>
+            <a href="javascript:void(0);" class="nav-tab">Explorar</a>
+            <!-- Nova aba Cinema adicionada -->
+            <a href="javascript:void(0);" class="nav-tab">Cinema</a>
+        </nav>
+    </header>
+
+    <!-- Área de conteúdo principal vazia para gerar a rolagem -->
+    <main class="infinite-scroll-area">
+        <!-- Site completamente vazio abaixo do menu -->
+    </main>
+
+    <!-- Script para controle do Header (esconder ao rolar para baixo, mostrar ao rolar para cima) -->
+    <script>
+        let lastScrollTop = 0;
+        const header = document.getElementById('main-header');
+
+        window.addEventListener('scroll', () => {
+            // Obtém a posição atual da rolagem
+            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+            // Lógica para esconder/mostrar
+            if (scrollTop > lastScrollTop && scrollTop > 100) {
+                // Rolando para baixo (esconde o header se passar de 100px)
+                header.classList.add('hide');
+            } else {
+                // Rolando para cima (mostra o header)
+                header.classList.remove('hide');
+            }
+
+            // Atualiza a última posição de rolagem
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+        });
+    </script>
+
+</body>
+</html>
