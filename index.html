@@ -19,7 +19,8 @@
         .header-left { position: absolute; left: 20px; display: flex; align-items: center; }
         .header-right { position: absolute; right: 20px; display: flex; align-items: center; }
         
-        .online-indicator { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 800; border: 1px solid rgba(255,255,255,0.1); cursor: default; user-select: none;}
+        .online-indicator { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 800; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; user-select: none; transition: transform 0.2s ease, background 0.2s ease; }
+        .online-indicator:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
         .pulse-dot { width: 6px; height: 6px; background-color: #00c851; border-radius: 50%; box-shadow: 0 0 8px #00c851; animation: pulse-green 2s infinite; }
         @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(0, 200, 81, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(0, 200, 81, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 200, 81, 0); } }
 
@@ -345,9 +346,7 @@
         .wp-users-count svg { width: 14px; height: 14px; fill: #ffffff; }
         .wp-video-container { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; }
         .wp-video-container video { width: 100%; height: 100%; object-fit: contain; }
-        
-        /* The overlay blocks interactions. By keeping it transparent and over the video, guests cannot touch controls */
-        .wp-video-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        .wp-video-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: auto; }
         
         .wp-chat-container { flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; background: #050505; }
         .wp-chat-message { display: flex; gap: 10px; align-items: flex-start; }
@@ -373,11 +372,11 @@
         .wp-user-item-badge { background: #ffaa00; color: #000; font-size: 9px; padding: 2px 4px; border-radius: 4px; font-weight: 900; }
     </style>
 </head>
-<body data-version="4.1">
+<body data-version="4.2">
 
     <header id="main-header">
         <div class="header-left">
-            <div class="online-indicator" title="Pessoas online no site">
+            <div class="online-indicator" title="Radar ao Vivo" onclick="openRadarModal()" style="cursor:pointer;">
                 <div class="pulse-dot"></div>
                 <span id="global-online-count">1</span>
             </div>
@@ -469,6 +468,17 @@
         </div>
         <div class="view-more-content">
             <div class="grid-4" id="view-more-grid"></div>
+        </div>
+    </div>
+
+    <div id="radar-modal" class="custom-modal">
+        <div class="modal-content">
+            <div class="modal-title">Radar ao Vivo</div>
+            <div class="modal-text" style="margin-top:-10px;">Veja o que estão assistindo agora</div>
+            <div id="radar-list" style="display:flex; flex-direction:column; gap:10px; max-height: 300px; overflow-y: auto; margin-top:10px;"></div>
+            <div class="modal-buttons">
+                <button onclick="closeRadarModal()" class="btn-cancel">Fechar</button>
+            </div>
         </div>
     </div>
 
@@ -1140,6 +1150,14 @@
         
         window.openLegalModal = function() { document.getElementById('legal-modal').classList.add('show'); };
         window.closeLegalModal = function() { document.getElementById('legal-modal').classList.remove('show'); };
+
+        window.openRadarModal = function() {
+            renderRadarUI();
+            document.getElementById('radar-modal').classList.add('show');
+        };
+        window.closeRadarModal = function() {
+            document.getElementById('radar-modal').classList.remove('show');
+        };
 
         function clearFormsAuth() {
             if(document.getElementById('login-form')) document.getElementById('login-form').reset();
@@ -2003,6 +2021,7 @@
             videoEl.play().catch(()=>{}); 
             
             document.getElementById('player-page').classList.add('active');
+            updatePresence();
         };
 
         window.closePlayer = function() {
@@ -2010,6 +2029,7 @@
             document.getElementById('player-page').classList.remove('focus-mode');
             document.getElementById('player-iframe-wrapper').innerHTML = '';
             activePlayerDocId = null;
+            updatePresence();
         };
 
         window.toggleFocusMode = function() {
@@ -2062,6 +2082,7 @@
             wrapper.innerHTML = `<video id="main-player-video" src="${url}" controls playsinline autoplay disablePictureInPicture controlsList="nodownload noremoteplayback noplaybackrate" style="width: 100%; height: 100%; background-color: #000; object-fit: contain;"></video>`;
             const videoEl = document.getElementById('main-player-video');
             videoEl.play().catch(()=>{});
+            updatePresence();
         };
 
         window.vote = async function(type) {
@@ -2947,17 +2968,70 @@
             document.getElementById('wp-users-modal').classList.remove('show');
         };
 
-        // Presence System
         let presenceInterval;
+        let activeRadarData = [];
         let mySessionId = sessionStorage.getItem('cine_presence_id');
         if(!mySessionId) {
             mySessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
             sessionStorage.setItem('cine_presence_id', mySessionId);
         }
 
+        window.renderRadarUI = function() {
+            const container = document.getElementById('radar-list');
+            container.innerHTML = '';
+            
+            if (activeRadarData.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#888; font-size:13px; padding:20px;">Ninguém está assistindo no momento.</div>';
+                return;
+            }
+            
+            activeRadarData.forEach(item => {
+                const div = document.createElement('div');
+                div.style.display = 'flex';
+                div.style.alignItems = 'center';
+                div.style.gap = '10px';
+                div.style.background = '#1a1a1a';
+                div.style.padding = '8px';
+                div.style.borderRadius = '12px';
+                div.style.border = '1px solid #333';
+                
+                const img = item.watchingPoster || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23222%22%3E%3Cpath d=%22M21 19V5C21 3.9 20.1 3 19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19ZM8.5 13.5L11 16.51L14.5 12L19 18H5L8.5 13.5Z%22/%3E%3C/svg%3E';
+                
+                div.innerHTML = `
+                    <img src="${img}" style="width:40px; height:60px; object-fit:cover; border-radius:6px; background:#111;">
+                    <div style="display:flex; flex-direction:column; gap:4px; overflow:hidden; flex-grow:1;">
+                        <div style="font-size:11px; color:#aaa; display:flex; align-items:center; gap:4px;">
+                            <img src="${item.photoURL}" style="width:14px; height:14px; border-radius:50%; object-fit:cover;">
+                            ${item.name}
+                        </div>
+                        <div style="font-size:13px; font-weight:800; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${item.watchingTitle}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        };
+
         async function updatePresence() {
             try {
-                await setDoc(doc(db, 'online_users', mySessionId), { lastActive: Date.now() });
+                const user = getCurrentWPUser();
+                let watchingTitle = null;
+                let watchingPoster = null;
+                const playerPage = document.getElementById('player-page');
+                
+                if (playerPage.classList.contains('active') && activePlayerDocId && currentDetailsData) {
+                    watchingTitle = document.getElementById('player-title').innerText;
+                    watchingPoster = currentDetailsData.poster;
+                }
+                
+                await setDoc(doc(db, 'online_users', mySessionId), { 
+                    lastActive: Date.now(),
+                    name: user.name,
+                    photoURL: user.photoURL,
+                    watchingTitle: watchingTitle,
+                    watchingPoster: watchingPoster
+                });
             } catch(e){}
         }
 
@@ -2972,11 +3046,22 @@
             onSnapshot(collection(db, 'online_users'), (snap) => {
                 const now = Date.now();
                 let count = 0;
+                activeRadarData = [];
+                
                 snap.forEach(d => {
                     const data = d.data();
-                    if(now - data.lastActive < 60000) count++;
+                    if(now - data.lastActive < 60000) {
+                        count++;
+                        if (data.watchingTitle && data.watchingPoster) {
+                            activeRadarData.push(data);
+                        }
+                    }
                 });
+                
                 document.getElementById('global-online-count').innerText = count;
+                if (document.getElementById('radar-modal').classList.contains('show')) {
+                    renderRadarUI();
+                }
             });
         }
 
