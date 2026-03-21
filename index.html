@@ -536,7 +536,8 @@
         
         .podium-avatar-wrapper { position: relative; z-index: 2; display: flex; justify-content: center; align-items: center; margin-bottom: -15px; }
         .podium-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #111; border: 2px solid #333; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .podium-step.p1 .podium-avatar { width: 56px; height: 56px; border-color: #ffaa00; border-width: 3px; box-shadow: 0 0 15px rgba(255,170,0,0.4); margin-bottom: 4px; }
+        @keyframes top1-glow { 0% { box-shadow: 0 0 10px rgba(255,170,0,0.4); } 100% { box-shadow: 0 0 25px rgba(255,170,0,0.9), inset 0 0 10px rgba(255,170,0,0.5); } }
+        .podium-step.p1 .podium-avatar { width: 56px; height: 56px; border-color: #ffaa00; border-width: 3px; animation: top1-glow 1.5s infinite alternate; margin-bottom: 4px; }
         .podium-step.p2 .podium-avatar { border-color: #c0c0c0; }
         .podium-step.p3 .podium-avatar { border-color: #cd7f32; }
 
@@ -1930,7 +1931,7 @@ body.lite-mode .carousel-item { box-shadow: none !important; border: 1px solid #
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, updateProfile, signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, updateDoc, getDoc, getDocs, onSnapshot, increment, arrayUnion, arrayRemove, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, updateDoc, getDoc, getDocs, onSnapshot, increment, arrayUnion, arrayRemove, query, orderBy, limit, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getDatabase, ref, set, onValue, off, onDisconnect, push, remove, update, query as rtdbQuery, orderByChild, limitToLast, serverTimestamp, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -3777,6 +3778,17 @@ const allContentShuffled = getVisibleContent().filter(c => !c.isDraft && !c.isVe
             }
             
             document.getElementById('det-views-count').innerText = formatViews(data.views || 0);
+
+            // Escuta em tempo real direto do Firestore apenas enquanto os detalhes estão abertos
+            if (window.currentDetailsUnsubscribe) { window.currentDetailsUnsubscribe(); }
+            window.currentDetailsUnsubscribe = onSnapshot(doc(db, "content", id), (docSnap) => {
+                if (docSnap.exists()) {
+                    const freshData = docSnap.data();
+                    currentDetailsData.views = freshData.views || currentDetailsData.views;
+                    const viewEl = document.getElementById('det-views-count');
+                    if(viewEl) viewEl.innerText = formatViews(currentDetailsData.views || 0);
+                }
+            });
             
             let hdcamTag = data.isHDCAM ? `<span style="background:#ffbb00; color:#000; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:900;">HDCAM</span>` : '';
             document.getElementById('det-meta').innerHTML = `${data.year || ''} • ${data.genres || ''} ${hdcamTag}`;
@@ -3851,6 +3863,11 @@ if(window.updateReminderUI) window.updateReminderUI(data);
         window.closeDetails = function(preventBack = false) {
             document.getElementById('details-page').classList.remove('active');
             currentDetailsData = null;
+            
+            if (window.currentDetailsUnsubscribe) { 
+                window.currentDetailsUnsubscribe(); 
+                window.currentDetailsUnsubscribe = null; 
+            }
             
             if(typeof updateMetaTags === 'function') {
                 updateMetaTags("CINERAVE", "A melhor plataforma para assistir filmes e séries.", "https://i.ibb.co/sp7VmWvz/IMG-0947.jpg");
@@ -4143,9 +4160,13 @@ closeServerModal();
             if (currentDetailsData) {
                 const sessionViewKey = 'viewed_' + currentDetailsData.id;
                 if (!sessionStorage.getItem(sessionViewKey)) {
+                    // Update Otimista: Soma na UI imediatamente ao dar play
+                    currentDetailsData.views = (currentDetailsData.views || 0) + 1;
+                    const viewEl = document.getElementById('det-views-count');
+                    if (viewEl) viewEl.innerText = formatViews(currentDetailsData.views);
+                    
                     updateDoc(doc(db, "content", currentDetailsData.id), { views: increment(1) }).catch(()=>{});
                     sessionStorage.setItem(sessionViewKey, 'true');
-                    currentDetailsData.views = (currentDetailsData.views || 0) + 1;
                 }
             }
             
@@ -4860,7 +4881,16 @@ closeServerModal();
                 div.innerHTML = `
                     <img src="${img}">
                     <div class="room-card-info">
-                        <div class="room-card-title">${room.movieTitle || 'Filme'} ${lockIcon}</div>
+                        <div class="room-card-title" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            ${(function(){
+                                let t = room.movieTitle || 'Filme';
+                                if(t.includes(' - T')) {
+                                    let p = t.split(' - T');
+                                    return `<span>${p[0]}</span> <span style="background:#00c851; color:#000; padding:2px 6px; border-radius:4px; font-size:9px; font-weight:900;">T${p[1]}</span>`;
+                                }
+                                return `<span>${t}</span>`;
+                            })()} ${lockIcon}
+                        </div>
                         <div style="font-size:9px; color:#ff4a4a; font-weight:900; text-transform:uppercase; margin-bottom:4px; display:flex; align-items:center; gap:4px;">
                             <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:#ff4a4a;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
                             ${timeLeft}
@@ -4868,9 +4898,11 @@ closeServerModal();
                         <div class="room-card-host">
                             <img src="${hostPhoto}"> <span>${hostName}</span>
                         </div>
-                        <div class="room-card-users">
-                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg> 
-                            ${usersCount} / ${maxUsers}
+                        <div class="room-card-users" style="display:flex; align-items:center; gap:4px;">
+                            <div style="display:flex; padding-left:4px;">
+                                ${(room.users ? (Array.isArray(room.users) ? room.users : Object.values(room.users)) : []).slice(0,3).map((u,i) => `<img src="${u.photoURL || 'https://api.dicebear.com/9.x/bottts/svg?seed=x'}" style="width:20px; height:20px; border-radius:50%; border:2px solid #111; margin-left:-8px; object-fit:cover; position:relative; z-index:${10-i};">`).join('')}
+                            </div>
+                            <span style="font-size:10px; color:#aaa; font-weight:700; margin-left:4px;">${usersCount > 3 ? '+'+(usersCount-3) : ''} (${usersCount}/${maxUsers})</span>
                         </div>
                     </div>
                     <button class="room-card-enter-btn" onclick="attemptJoinWatchParty('${room.id}')">ENTRAR</button>
@@ -5690,16 +5722,8 @@ users.forEach(u => {
         window.renderRadarUI = async function() {
             const container = document.getElementById('radar-list');
             
-            // Checa Reset Diário do Maratonista
-            const currentDayStr = window.getCineDayStr();
-            let storedDay = sessionStorage.getItem('cine_session_day');
-            if (storedDay !== currentDayStr) {
-                sessionStorage.setItem('cine_session_day', currentDayStr);
-                sessionStorage.setItem('cine_watch_time', '0');
-                window.sessionWatchTimeMs = 0;
-                window.playerStartTime = 0;
-            }
-
+            // Reset Diário do Maratonista removido. O Pódio agora é Global e Permanente.
+            
             container.innerHTML = '';
             
             if (activeRadarData.length === 0) {
@@ -5862,13 +5886,15 @@ users.forEach(u => {
                     maratonandoBadge = `<span class="radar-maratonando">🔥 MARATONANDO</span>`;
                 }
 
-                const limitAvatars = group.watchers.slice(0, 3).map(w => `<img src="${w.photoURL}" style="width:16px; height:16px; border-radius:50%; border:1px solid #111; margin-left:-6px; object-fit:cover;">`).join('');
+                const limitAvatars = group.watchers.slice(0, 3).map((w, i) => `<img src="${w.photoURL}" style="width:22px; height:22px; border-radius:50%; border:2px solid #151515; margin-left:${i===0?'0':'-10px'}; object-fit:cover; position:relative; z-index:${10-i}; box-shadow: -2px 0 5px rgba(0,0,0,0.5);">`).join('');
 
                 const div = document.createElement('div');
                 div.className = 'radar-list-item radar-geral-item';
-                div.style.cssText = `${cursorStyle} transition: transform 0.2s;`;
+                div.style.cssText = `${cursorStyle} transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); background: linear-gradient(145deg, #1a1a1a, #111); box-shadow: 0 6px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); padding: 12px;`;
                 if(relatedContent) div.onmousedown = function(){ this.style.transform = 'scale(0.98)'; };
-                if(relatedContent) div.onmouseup = function(){ this.style.transform = 'scale(1)'; };
+                if(relatedContent) div.onmouseup = function(){ this.style.transform = 'translateY(-2px)'; };
+                if(relatedContent) div.onmouseover = function(){ this.style.transform = 'translateY(-2px)'; this.style.boxShadow = '0 10px 25px rgba(0,0,0,0.8)'; this.style.borderColor = 'rgba(255,255,255,0.15)'; };
+                if(relatedContent) div.onmouseout = function(){ this.style.transform = 'translateY(0)'; this.style.boxShadow = '0 6px 15px rgba(0,0,0,0.5)'; this.style.borderColor = 'rgba(255,255,255,0.05)'; };
 
                 div.innerHTML = `
                     <div class="${fireClass}" style="width:50px; height:75px; border-radius:6px; flex-shrink:0; box-shadow: 0 4px 8px rgba(0,0,0,0.4);" ${clickAction}>
@@ -5953,17 +5979,18 @@ users.forEach(u => {
                 });
                 onDisconnect(presenceRef).remove();
 
-                // Atualiza o pódio diário de forma otimizada com timer real e somatório persistente
+                // Atualiza o Pódio Permanente via Transação (Evita sobreposição de dados e garante precisão)
                 if (!window.lastPodiumUpdate) window.lastPodiumUpdate = 0;
                 let isWatchingContent = (window.playerStartTime > 0) || (currentTabName === "Watch Party") || (currentTabName === "Shorts");
                 
                 if (isWatchingContent && !user.isAnon && (Date.now() - window.lastPodiumUpdate > 60000)) {
                     window.lastPodiumUpdate = Date.now();
-                    const todayStr = window.getCineDayStr();
-                    const podiumRef = doc(db, 'daily_stats', todayStr + '_podium');
-                    getDoc(podiumRef).then(snap => {
+                    const podiumRef = doc(db, 'global_stats', 'permanent_podium');
+                    
+                    runTransaction(db, async (transaction) => {
+                        const snap = await transaction.get(podiumRef);
                         let topList = snap.exists() ? (snap.data().top || []) : [];
-                        let me = topList.find(x => x.uid === user.uid || x.name === user.name);
+                        let me = topList.find(x => x.uid === user.uid);
                         
                         if (me) {
                             me.watchTime += 1;
@@ -5972,8 +5999,9 @@ users.forEach(u => {
                         } else {
                             topList.push({ uid: user.uid, name: user.name, photoURL: user.photoURL, watchTime: 1 });
                         }
-                        topList = topList.sort((a,b) => b.watchTime - a.watchTime).slice(0, 3);
-                        setDoc(podiumRef, { top: topList }, { merge: true });
+                        
+                        topList = topList.sort((a,b) => b.watchTime - a.watchTime).slice(0, 50); // Salva os 50 melhores
+                        transaction.set(podiumRef, { top: topList }, { merge: true });
                     }).catch(()=>{});
                 }
 
@@ -6039,8 +6067,8 @@ users.forEach(u => {
                 }
             });
 
-            // Listener Global do Pódio Diário
-            onSnapshot(doc(db, 'daily_stats', todayStr + '_podium'), (docSnap) => {
+            // Listener Global do Pódio Permanente
+            onSnapshot(doc(db, 'global_stats', 'permanent_podium'), (docSnap) => {
                 if (docSnap.exists()) {
                     window.globalPodiumData = docSnap.data().top || [];
                 } else {
@@ -7326,11 +7354,16 @@ users.forEach(u => {
                 }
 
                 if (!oldItem) {
-                    // 2. Novo Filme do Ano Adicionado (Somente se for adicionado nas últimas 24 horas, evita Spam antigo)
-                    if (item.year === currentYear && !isFuture && item.createdAt && (Date.now() - new Date(item.createdAt).getTime() < 86400000)) {
-                        window.addNotification("LANÇAMENTO DO ANO", `O grande sucesso "${item.title}" acaba de pousar no catálogo.`, "blue", item.poster, item.id);
-                    }
-                } else {
+                    // 2. Novo Conteúdo Adicionado (Qualquer ano)
+                    if (!isFuture && item.createdAt && (Date.now() - new Date(item.createdAt).getTime() < 86400000)) {
+                        const styles = ["blue", "green", "promo", "info"];
+                        const rStyle = styles[Math.floor(Math.random() * styles.length)];
+                        const isS = item.type === 'tv';
+                        const tTxt = isS ? "SÉRIE DISPONÍVEL" : "NOVIDADE NO CATÁLOGO";
+                        const txt = isS ? `Maratone agora "${item.title}". Pegue a pipoca!` : `O filme "${item.title}" acabou de chegar. Assista agora!`;
+                        window.addNotification(item.year === currentYear ? "LANÇAMENTO DO ANO" : tTxt, txt, rStyle, item.poster, item.id);
+                    }
+                } else {
                     // 3. Nova Temporada
                     if (item.latestS > oldItem.latestS && !isFuture) {
                         window.addNotification("NOVA TEMPORADA", `A série "${item.title}" acabou de receber uma temporada nova. Corra pra maratonar!`, "green", item.poster, item.id);
@@ -7906,7 +7939,7 @@ users.forEach(u => {
                 // 1. Convite para Watch Party: Sextas e Sábados à noite (19h - 22h)
                 if ((day === 5 || day === 6) && hour >= 19 && hour <= 22) {
                     if (!sessionStorage.getItem(`sched_wp_${day}`)) {
-                        window.addNotification("SESSÃO EM GRUPO", "escolha qualquer filme/serie clica em assistir ou no episódio e “criar sala “ pronto! só convidar os amigos pelo link !", "info", "", "action_lobby");
+                        window.addNotification("SESSÃO EM GRUPO 🔥", "Escolha qualquer filme/série, clique em assistir ou no episódio e 'Criar sala'. Pronto! Só convidar os amigos pelo link!", "info", "", "");
                         sessionStorage.setItem(`sched_wp_${day}`, 'true');
                     }
                 }
