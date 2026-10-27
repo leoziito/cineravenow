@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinerave - Comunicado Importante</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            red: '#E50914',
+                            purple: '#8B5CF6',
+                            dark: '#0A0A0B',
+                            card: '#121215',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glow': 'glow 3s infinite alternate',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%': { opacity: 0.3, transform: 'scale(0.98)' },
+                            '100%': { opacity: 0.7, transform: 'scale(1.02)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #000000;
+            color: #E2E8F0;
+        }
+        .bg-grid {
+            background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #FFF 0%, #A5B4FC 50%, #E50914 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .glass-card {
+            background: rgba(18, 18, 21, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between bg-black font-sans selection:bg-red-600 selection:text-white relative overflow-x-hidden">
+
+    <!-- Efeitos de iluminação de fundo (Ambient Lights) -->
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-red-600/15 blur-[120px] pointer-events-none rounded-full animate-pulse-slow"></div>
+    <div class="fixed bottom-0 right-0 w-[400px] h-[400px] bg-purple-600/10 blur-[140px] pointer-events-none rounded-full"></div>
+    
+    <!-- Textura de Grade de Fundo -->
+    <div class="fixed inset-0 bg-grid pointer-events-none opacity-40"></div>
+
+    <!-- Conteúdo Principal -->
+    <main class="relative z-10 flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div class="max-w-3xl w-full mx-auto my-auto">
+            
+            <!-- Badge / Status -->
+            <div class="flex justify-center mb-6">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-card border border-red-500/30 text-red-400 text-xs sm:text-sm font-semibold tracking-wide uppercase shadow-lg shadow-red-950/20">
+                    <span class="relative flex h-2 py-0.5 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    Pausa Temporária
+                </div>
+            </div>
+
+            <!-- Header: Nome do Site -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-2">
+                    <span class="text-white">CINERAVE</span><span class="text-red-600">.</span>
+                </h1>
+                <p class="text-gray-400 text-base sm:text-lg font-medium">Comunicado Oficial à Comunidade</p>
+            </div>
+
+            <!-- Cartão Principal do Mensagem -->
+            <div class="glass-card rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden mb-8 border border-white/10">
+                <!-- Linha decorativa no topo -->
+                <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-red-600 to-transparent"></div>
+
+                <!-- Título Interno -->
+                <h2 class="text-2xl sm:text-3xl font-bold text-white mb-6 text-center leading-snug">
+                    O site será desativado por tempo indeterminado
+                </h2>
+
+                <!-- Texto do Comunicado -->
+                <div class="space-y-4 text-gray-300 text-sm sm:text-base leading-relaxed">
+                    <p>
+                        Para quem sempre esteve com o <strong class="text-white font-semibold">Cinerave</strong> desde o início, sabe que todo o projeto é administrado por apenas <span class="text-red-400 font-semibold">uma única pessoa</span>. Criei o site há 2 anos com muito carinho, mas ultimamente a minha vida pessoal anda extremamente corrida e, infelizmente, não tenho mais tempo para mantê-lo atualizado como gostaria.
+                    </p>
+                    <p>
+                        Quem já está no nosso grupo do WhatsApp acompanhou de perto essa rotina: eu vinha enviando os pedidos e conteúdos diretamente por lá através de links e drives.
+                    </p>
+                    
+                    <div class="my-6 p-4 rounded-2xl bg-gradient-to-r from-red-950/30 to-purple-950/30 border border-red-500/20 text-center">
+                        <p class="text-white font-bold text-base sm:text-lg">
+                            🍿 Mas calma, isto NÃO é o fim do Cinerave!
+                        </p>
+                        <p class="text-gray-300 text-xs sm:text-sm mt-1">
+                            Voltaremos em breve com um site totalmente novo e com novos ajudantes na administração!
+                        </p>
+                    </div>
+
+                    <p class="text-center text-gray-400 font-medium">
+                        Em breve traremos mais novidades. Enquanto isso, nossa comunidade continua ativa nos nossos canais oficiais:
+                    </p>
+                </div>
+
+                <!-- Seção de Links & Comunidade -->
+                <div class="mt-8 space-y-4">
+                    
+                    <!-- Linha 1: Grupo Grátis e Canal VIP com Taxa -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <!-- Grupo Grátis no WhatsApp -->
+                        <a href="https://chat.whatsapp.com/Lidb3f8U9SsDe10kiLVICR?s=cl&p=i&mlu=4&ilr=4&iam=0" target="_blank" rel="noopener noreferrer" 
+                           class="flex flex-col justify-between p-4 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/30 rounded-2xl transition-all duration-300 transform hover:-translate-y-0.5 group">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-600/20 flex items-center justify-center text-emerald-400 text-xl font-bold group-hover:scale-110 transition-transform">
+                                    <i class="fa-brands fa-whatsapp"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-white font-bold text-base">Grupo Grátis no WhatsApp</h3>
+                                    <span class="text-xs text-emerald-400 font-medium">Para pedidos & informações</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-400 leading-normal mt-1">
+                                Entre gratuitamente para solicitar conteúdos e acompanhar as novidades do site.
+                            </p>
+                        </a>
+
+                        <!-- Canal VIP de Drives & Links (R$ 5) -->
+                        <a href="https://chat.whatsapp.com/GZUcD7DW8xx1mA7FbuzHT0?s=cl&p=i&mlu=4&ilr=4&iam=0" target="_blank" rel="noopener noreferrer" 
+                           class="flex flex-col justify-between p-4 bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/30 rounded-2xl transition-all duration-300 transform hover:-translate-y-0.5 group">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="w-10 h-10 rounded-xl bg-amber-600/20 flex items-center justify-center text-amber-400 text-xl font-bold group-hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-crown"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="text-white font-bold text-base">Canal de Drives & Links</h3>
+                                        <span class="px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-black rounded-full uppercase">VIP</span>
+                                    </div>
+                                    <span class="text-xs text-amber-400 font-semibold">Taxa única: R$ 5,00</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-400 leading-normal mt-1">
+                                Clique aqui para entrar no grupo e enviar o seu comprovante de pagamento.
+                            </p>
+                        </a>
+
+                    </div>
+
+                    <!-- Seção de Pagamento PIX e Apoio -->
+                    <div class="mt-6 p-5 rounded-2xl bg-gradient-to-b from-white/5 to-white/0 border border-white/10 space-y-4">
+                        
+                        <div class="text-center">
+                            <h4 class="text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-piggy-bank text-amber-400"></i>
+                                Chave PIX para Acesso ao Canal VIP
+                            </h4>
+                            <p class="text-xs text-gray-400 mt-1">
+                                Copie a chave abaixo para fazer o PIX de <strong>R$ 5,00</strong> e envie o comprovante no grupo VIP acima.
+                            </p>
+                        </div>
+
+                        <!-- Caixinha de Copiar PIX -->
+                        <div class="flex flex-col sm:flex-row items-center gap-2 bg-black/60 p-2 rounded-xl border border-white/10">
+                            <input type="text" readonly value="bb2ab593-245a-4d9e-97bb-e240750c6290" id="pixKeyInput" 
+                                   class="w-full bg-transparent text-gray-300 text-xs sm:text-sm font-mono px-3 py-2 outline-none select-all text-center sm:text-left" />
+                            <button onclick="copyPixKey()" id="copyPixBtn" 
+                                    class="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-2 shrink-0">
+                                <i class="fa-regular fa-copy"></i>
+                                <span id="copyPixText">Copiar Chave</span>
+                            </button>
+                        </div>
+
+                        <!-- Apoie com LivePix -->
+                        <div class="pt-2 text-center border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div class="text-left">
+                                <span class="text-xs text-gray-300 font-semibold block">Deseja apoiar com outro valor?</span>
+                                <span class="text-[11px] text-gray-400 block">Qualquer ajuda faz a diferença para a volta do site!</span>
+                            </div>
+                            <a href="https://livepix.gg/cinerave" target="_blank" rel="noopener noreferrer" 
+                               class="w-full sm:w-auto px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl transition-all inline-flex items-center justify-center gap-2 shrink-0 shadow-lg shadow-purple-950/40">
+                                <i class="fa-solid fa-heart text-red-300"></i>
+                                <span>Apoiar no LivePix</span>
+                            </a>
+                        </div>
+
+                    </div>
+
+                    <!-- Seção Oportunidade: Venda do Site Cinerave -->
+                    <div class="p-5 rounded-2xl bg-gradient-to-r from-blue-950/40 via-indigo-950/40 to-blue-950/40 border border-blue-500/30 text-left relative overflow-hidden shadow-xl">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div class="space-y-2 max-w-xl">
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2.5 py-0.5 text-[10px] font-extrabold bg-blue-500 text-black rounded-full uppercase tracking-wider">Oportunidade</span>
+                                    <h3 class="text-white font-bold text-base sm:text-lg flex items-center gap-2">
+                                        <i class="fa-solid fa-store text-blue-400"></i>
+                                        Site À Venda — R$ 50,00
+                                    </h3>
+                                </div>
+                                <p class="text-xs text-gray-300 leading-relaxed">
+                                    Deseja continuar o projeto do <strong class="text-white">Cinerave</strong>? Você pode lucrar muito com o site ativo!
+                                </p>
+                                <ul class="text-[11px] text-gray-400 space-y-1 list-disc list-inside">
+                                    <li>Após a compra, serão repassadas todas as informações do funcionamento interno.</li>
+                                    <li>Os dados do site serão trocados pelos dados que o comprador escolher.</li>
+                                </ul>
+                            </div>
+                            <a href="https://wa.me/5521993837026?text=quero%20comprar%20o%20site" target="_blank" rel="noopener noreferrer" 
+                               class="w-full md:w-auto px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition-all inline-flex items-center justify-center gap-2 shrink-0 shadow-lg shadow-blue-950/50 hover:scale-105">
+                                <i class="fa-brands fa-whatsapp text-sm"></i>
+                                <span>Falar com Responsável</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Transparência sobre o dinheiro arrecadado -->
+                    <div class="p-3 rounded-xl bg-red-950/20 border border-red-500/20 text-center">
+                        <p class="text-xs text-gray-300">
+                            💙 <strong class="text-white">Transparência:</strong> Todo dinheiro arrecadado será utilizado na <strong>construção do novo site Cinerave</strong> e para a manutenção diária das atualizações dos links!
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Status de Transição & Nota Final -->
+            <div class="text-center space-y-2">
+                <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold">
+                    Cinerave 2.0 • Em Desenvolvimento
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="relative z-10 border-t border-white/5 py-6 text-center text-xs text-gray-600">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>&copy; 2024-2026 Cinerave. Todos os direitos reservados. Nos vemos em breve!</p>
+        </div>
+    </footer>
+
+    <!-- Script para funcionalidade de copiar chave PIX -->
+    <script>
+        function copyPixKey() {
+            const pixInput = document.getElementById('pixKeyInput');
+            const btnText = document.getElementById('copyPixText');
+            const copyBtn = document.getElementById('copyPixBtn');
+
+            // Executa cópia garantindo compatibilidade
+            pixInput.select();
+            pixInput.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+
+            // Feedback visual no botão
+            btnText.innerText = 'Copiado!';
+            copyBtn.classList.remove('bg-red-600', 'hover:bg-red-500');
+            copyBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+
+            setTimeout(() => {
+                btnText.innerText = 'Copiar Chave';
+                copyBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+                copyBtn.classList.add('bg-red-600', 'hover:bg-red-500');
+            }, 2500);
+        }
+    </script>
+
+</body>
+</html>
